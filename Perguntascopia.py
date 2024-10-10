@@ -64,7 +64,7 @@ for caminho_word in caminhos_words:
 texto_excel = extrair_texto_de_multiplos_excels(caminhos_excels, limite_linhas=50)
 
 # Interface do Streamlit
-st.title("Consulta de Dados com IA (Cohere)")
+st.title("Consulta de Dados Logistica Reversa - PSD")
 
 # Caixa de texto para o usuário fazer perguntas
 pergunta = st.text_input("Digite a sua pergunta sobre os dados:")
