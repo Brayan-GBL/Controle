@@ -3,8 +3,8 @@ import streamlit as st
 import docx
 import pandas as pd
 
-# Configurar sua chave da API do Cohere
-cohere_client = cohere.Client("HBGP5Dr6jHbUdDBtfyFHjM5F4JmyMgerjAFT2c6n")
+# Configurar sua chave da API do Cohere usando secrets
+cohere_client = cohere.Client(st.secrets["COHERE_API_KEY"])
 
 # Função para extrair o texto de um arquivo Word (DOCX)
 def extrair_texto_de_word(caminho_word):
@@ -42,9 +42,9 @@ def perguntar_ia_sobre_arquivos(texto_words, texto_excel, pergunta):
     """
 
     response = cohere_client.generate(
-        model='command-xlarge-nightly',  # Modelos como 'xlarge' podem ser usados
+        model='command-xlarge-nightly',
         prompt=prompt,
-        max_tokens=300,  # Ajuste de acordo com o tamanho da resposta
+        max_tokens=300,
         temperature=0.7
     )
     
@@ -57,7 +57,7 @@ caminhos_excels = ["Base.xlsx"]
 # Extrair texto de todos os arquivos Word e do Excel
 texto_words = ""
 for caminho_word in caminhos_words:
-    texto_words += extrair_texto_de_word(caminho_word)  # Concatenar o texto de todos os arquivos Word
+    texto_words += extrair_texto_de_word(caminho_word)
 
 texto_excel = extrair_texto_de_multiplos_excels(caminhos_excels, limite_linhas=50)
 
@@ -70,9 +70,7 @@ pergunta = st.text_input("Digite a sua pergunta sobre os dados:")
 # Botão para iniciar a consulta
 if st.button("Consultar"):
     if pergunta:
-        # Perguntar para a IA com base nos arquivos fixos
         resposta = perguntar_ia_sobre_arquivos(texto_words, texto_excel, pergunta)
-        # Mostrar a resposta
         st.write("Resposta da IA:", resposta)
     else:
         st.write("Por favor, digite uma pergunta.")
