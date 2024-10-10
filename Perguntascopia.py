@@ -4,7 +4,9 @@ import docx
 import pandas as pd
 
 # Configurar sua chave da API do Cohere usando secrets
+# Configurar sua chave da API do Cohere usando o secrets
 cohere_client = cohere.Client(st.secrets["COHERE_API_KEY"])
+
 
 # Função para extrair o texto de um arquivo Word (DOCX)
 def extrair_texto_de_word(caminho_word):
