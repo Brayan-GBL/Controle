@@ -53,8 +53,8 @@ def perguntar_ia_sobre_arquivos(texto_words, texto_excel, pergunta):
     return response.generations[0].text
 
 # Caminhos fixos para os arquivos Word e Excel
-caminhos_words = ["Transportadoras.docx", "Manual_Devolucao.docx"]
-caminhos_excels = ["Base.xlsx"]
+caminhos_words = ["Cohere/Transportadoras.docx", "Cohere/Manual_Devolucao.docx"]
+caminhos_excels = ["Cohere/Base.xlsx"]
 
 # Extrair texto de todos os arquivos Word e do Excel
 texto_words = ""
