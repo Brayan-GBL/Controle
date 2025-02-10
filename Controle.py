@@ -3,7 +3,7 @@ import streamlit as st
 
 def processar_consolidacao(arquivo_excel):
     # Carregar o arquivo Excel
-    df = pd.read_excel(arquivo_excel)
+    df = pd.read_excel(arquivo_excel, sheet_name="CONSOLIDAÇÃO")
     
     # Agrupar por SKU e somar os valores relevantes
     df_sku = df.groupby("SKU").agg({
