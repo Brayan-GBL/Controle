@@ -27,7 +27,7 @@ def processar_consolidacao(arquivo_excel):
     return df_sku
 
 # Interface Streamlit
-st.title("Upload de Arquivo - Consolidação de Saldos")
+st.title("Upload de Arquivo Estoque - PSD ")
 
 uploaded_file = st.file_uploader("Faça o upload do arquivo Excel", type=["xlsx"])
 
