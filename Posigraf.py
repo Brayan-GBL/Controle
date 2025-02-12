@@ -14,15 +14,17 @@ def extrair_dados_po(mensagem):
         qtd.group(1) if qtd else "N/A"
     )
 
-def processar_pedidos(pedidos_file, sim_file, nao_file):
+def processar_pedidos(pedidos_file, sim_file, nao_file, erro_file):
     # Carregar os arquivos
     pedidos_df = pd.read_excel(pedidos_file)
     sim_df = pd.read_excel(sim_file)
     nao_df = pd.read_excel(nao_file)
+    erro_df = pd.read_excel(erro_file)
     
     # Limpar nomes das colunas para remover espaços extras
     sim_df.columns = sim_df.columns.str.strip()
     nao_df.columns = nao_df.columns.str.strip()
+    erro_df.columns = erro_df.columns.str.strip()
     
     # Renomear colunas para padronizar
     if "NU_PEDIDO_VENDA" in sim_df.columns:
@@ -34,6 +36,11 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
         nao_df = nao_df.rename(columns={"NUMERO_PEDIDO": "PEDIDO"})
     else:
         raise KeyError("Coluna 'NUMERO_PEDIDO' não encontrada no relatório NÃO.")
+    
+    if "NF_PEDIDO" in erro_df.columns:
+        erro_df = erro_df.rename(columns={"NF_PEDIDO": "PEDIDO"})
+    else:
+        raise KeyError("Coluna 'NF_PEDIDO' não encontrada no relatório ERRO NOTAS ATUALIZADAS.")
     
     # Extrair apenas a coluna de pedidos
     pedidos = pedidos_df.iloc[:, 0].dropna().tolist()
@@ -67,6 +74,21 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
             elif "Ordem de venda" in tipo_erro:
                 resultado["Resultado"] = "Necessário mandar para devolução"
         
+        # Verificar no relatório NÃO para status finalizado
+        nao_match = nao_df[nao_df["PEDIDO"] == pedido]
+        if not nao_match.empty:
+            status_processamento = str(nao_match.iloc[0].get("STATUS_PROCESSAMENTO", "")).strip()
+            
+            if status_processamento and status_processamento.lower() != "nan":
+                resultado["Resultado"] = status_processamento
+        
+        # Verificar no relatório ERRO NOTAS ATUALIZADAS
+        if resultado["Resultado"] in ["SEFAZ Rejeitado", "Erro"]:
+            erro_match = erro_df[erro_df["PEDIDO"] == pedido]
+            if not erro_match.empty:
+                erro_mensagem = str(erro_match.iloc[0].get("NFE_MENSAGEM", "")).strip()
+                resultado["Mensagem Erro"] = erro_mensagem
+        
         resultados.append(resultado)
     
     return pd.DataFrame(resultados)
@@ -77,10 +99,11 @@ st.title("Verificação de Pedidos Posigraf")
 pedidos_file = st.file_uploader("Upload do arquivo PEDIDOS POSIGRAF", type=["xlsx"])
 sim_file = st.file_uploader("Upload do arquivo Relatório SIM", type=["xlsx"])
 nao_file = st.file_uploader("Upload do arquivo Relatório NÃO", type=["xlsx"])
+erro_file = st.file_uploader("Upload do arquivo ERRO NOTAS ATUALIZADAS", type=["xlsx"])
 
-if pedidos_file and sim_file and nao_file:
+if pedidos_file and sim_file and nao_file and erro_file:
     try:
-        df_resultado = processar_pedidos(pedidos_file, sim_file, nao_file)
+        df_resultado = processar_pedidos(pedidos_file, sim_file, nao_file, erro_file)
         st.write("### Resultados da Análise:")
         st.dataframe(df_resultado)
 
