@@ -47,13 +47,15 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
         sim_match = sim_df[sim_df["PEDIDO"] == pedido]
         if not sim_match.empty:
             tipo_erro = str(sim_match.iloc[0].get("TIPO_ERRO", "")).strip()
-            status_sefaz = str(sim_match.iloc[0].get("STATUS_SEFAZ", "N/A")).strip()
+            status_sefaz = str(sim_match.iloc[0].get("STATUS_SEFAZ", "")).strip()
             mensagem = sim_match.iloc[0].get("MENSAGEM", "")
             
-            if tipo_erro and tipo_erro != "-":
+            if tipo_erro and tipo_erro != "-" and tipo_erro.lower() != "nan":
                 resultado["Resultado"] = tipo_erro
-            else:
+            elif status_sefaz and status_sefaz.lower() != "nan":
                 resultado["Resultado"] = status_sefaz
+            else:
+                resultado["Resultado"] = "Sem informação disponível"
             
             if tipo_erro == "NA":
                 resultado["Resultado"] = mensagem
