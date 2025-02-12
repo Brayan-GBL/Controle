@@ -46,8 +46,14 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
         # Procurar no relatório SIM
         sim_match = sim_df[sim_df["PEDIDO"] == pedido]
         if not sim_match.empty:
-            tipo_erro = str(sim_match.iloc[0].get("TIPO_ERRO", "N/A"))
+            tipo_erro = str(sim_match.iloc[0].get("TIPO_ERRO", "")).strip()
+            status_sefaz = str(sim_match.iloc[0].get("STATUS_SEFAZ", "N/A")).strip()
             mensagem = sim_match.iloc[0].get("MENSAGEM", "")
+            
+            if tipo_erro and tipo_erro != "-":
+                resultado["Resultado"] = tipo_erro
+            else:
+                resultado["Resultado"] = status_sefaz
             
             if tipo_erro == "NA":
                 resultado["Resultado"] = mensagem
@@ -58,8 +64,6 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
                 resultado["Resultado"] = mensagem
             elif "Ordem de venda" in tipo_erro:
                 resultado["Resultado"] = "Necessário mandar para devolução"
-            else:
-                resultado["Resultado"] = "Sem correspondência específica"
         
         # Verificar no relatório NÃO para status finalizado
         nao_match = nao_df[nao_df["PEDIDO"] == pedido]
