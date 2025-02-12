@@ -46,7 +46,7 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
         # Procurar no relatório SIM
         sim_match = sim_df[sim_df["PEDIDO"] == pedido]
         if not sim_match.empty:
-            tipo_erro = sim_match.iloc[0].get("TIPO_ERRO", "N/A")
+            tipo_erro = str(sim_match.iloc[0].get("TIPO_ERRO", "N/A"))
             mensagem = sim_match.iloc[0].get("MENSAGEM", "")
             
             if tipo_erro == "NA":
