@@ -67,16 +67,6 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
             elif "Ordem de venda" in tipo_erro:
                 resultado["Resultado"] = "Necessário mandar para devolução"
         
-        # Verificar no relatório NÃO para status finalizado
-        nao_match = nao_df[nao_df["PEDIDO"] == pedido]
-        if not nao_match.empty:
-            data_envio = nao_match.iloc[0].get("DATA_ENVIO_NF_OPERADOR", None)
-            status_envio = nao_match.iloc[0].get("STATUS_ENVIO_NF_OPERADOR", None)
-            if pd.isna(data_envio) or pd.isna(status_envio):
-                resultado["Resultado"] = "Necessário verificar"
-            else:
-                resultado["Resultado"] = "Sucesso"
-        
         resultados.append(resultado)
     
     return pd.DataFrame(resultados)
