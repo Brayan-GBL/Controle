@@ -67,6 +67,13 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
             elif "Ordem de venda" in tipo_erro:
                 resultado["Resultado"] = "Necessário mandar para devolução"
         
+        # Verificar no relatório NÃO para status finalizado
+        nao_match = nao_df[nao_df["PEDIDO"] == pedido]
+        if not nao_match.empty:
+            status_processamento = str(nao_match.iloc[0].get("STATUS_PROCESSAMENTO", "")).strip()
+            if status_processamento and status_processamento.lower() != "nan":
+                resultado["Resultado"] = status_processamento
+        
         resultados.append(resultado)
     
     return pd.DataFrame(resultados)
