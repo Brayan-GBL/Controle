@@ -77,7 +77,7 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
             if status_processamento and status_processamento.lower() != "nan":
                 resultado["Resultado"] = status_processamento
             elif data_envio and status_envio and data_envio.lower() != "nan" and status_envio.lower() != "nan":
-                resultado["Resultado"] = "Sucesso"
+                resultado["Resultado"] = status_envio
         
         resultados.append(resultado)
     
