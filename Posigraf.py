@@ -71,8 +71,13 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
         nao_match = nao_df[nao_df["PEDIDO"] == pedido]
         if not nao_match.empty:
             status_processamento = str(nao_match.iloc[0].get("STATUS_PROCESSAMENTO", "")).strip()
+            data_envio = str(nao_match.iloc[0].get("DATA_ENVIO_NF_OPERADOR", "")).strip()
+            status_envio = str(nao_match.iloc[0].get("STATUS_ENVIO_NF_OPERADOR", "")).strip()
+            
             if status_processamento and status_processamento.lower() != "nan":
                 resultado["Resultado"] = status_processamento
+            elif data_envio and status_envio and data_envio.lower() != "nan" and status_envio.lower() != "nan":
+                resultado["Resultado"] = "Sucesso"
         
         resultados.append(resultado)
     
