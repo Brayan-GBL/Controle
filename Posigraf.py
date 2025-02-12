@@ -78,6 +78,8 @@ def processar_pedidos(pedidos_file, sim_file, nao_file):
                 resultado["Resultado"] = status_processamento
             elif data_envio and status_envio and data_envio.lower() != "nan" and status_envio.lower() != "nan":
                 resultado["Resultado"] = status_envio
+            elif not resultado.get("Resultado"):
+                resultado["Resultado"] = "Sem informação disponível"
         
         resultados.append(resultado)
     
