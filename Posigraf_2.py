@@ -4,11 +4,15 @@ import streamlit as st
 def processar_comparacao(pedidos_file, estoque_file):
     # Carregar os arquivos
     pedidos_df = pd.read_excel(pedidos_file)
-    estoque_df = pd.read_excel(estoque_file)
+    estoque_df = pd.read_excel(estoque_file, sheet_name="Relatório Estoque Disponível")
     
     # Limpar nomes das colunas para remover espaços extras
     pedidos_df.columns = pedidos_df.columns.str.strip()
     estoque_df.columns = estoque_df.columns.str.strip()
+    
+    # Converter SKUs para string e remover pontos e vírgulas
+    pedidos_df["Item"] = pedidos_df["Item"].astype(str).str.replace(r'[^\d]', '', regex=True)
+    estoque_df["PEG"] = estoque_df["PEG"].astype(str).str.replace(r'[^\d]', '', regex=True)
     
     # Consolidar quantidades por PEG/SKU
     pedidos_consolidado = pedidos_df.groupby("Item").agg({"Quantidade": "sum", "Preço NF": "first"}).reset_index()
