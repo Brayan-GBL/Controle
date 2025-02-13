@@ -19,6 +19,9 @@ def processar_comparacao(pedidos_file, estoque_file):
     # Mesclar os dados
     resultado_df = pd.merge(pedidos_consolidado, estoque_df[["Item", "Estoque"]], on="Item", how="left")
     
+    # Preencher valores ausentes com "Não encontrado saldo"
+    resultado_df["Estoque"].fillna("Não encontrado saldo", inplace=True)
+    
     return resultado_df
 
 # Interface no Streamlit
