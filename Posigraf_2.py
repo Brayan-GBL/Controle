@@ -24,7 +24,7 @@ def processar_comparacao(pedidos_file, estoque_file):
     resultado_df = pd.merge(pedidos_consolidado, estoque_df[["Item", "Estoque"]], on="Item", how="left")
     
     # Preencher valores ausentes com "Não encontrado saldo"
-    resultado_df["Estoque"].fillna("PEG não encontrado", inplace=True)
+    resultado_df["Estoque"].fillna("Utilizar saldo PO", inplace=True)
     
     return resultado_df
 
