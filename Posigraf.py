@@ -3,102 +3,65 @@ import streamlit as st
 import re
 
 def extrair_dados_po(mensagem):
-    """Extrai Item, Preço na NF e Quantidade da mensagem PO."""
-    item = re.search(r'Item\s:(\d+\.\d+)', mensagem)
-    preco = re.search(r'Preço na NF\s:(\d+,\d+)', mensagem)
-    qtd = re.search(r'Qtd:(\d+)', mensagem)
+    """Extrai Item, Preço na NF e Quantidade da mensagem PO considerando diferentes padrões."""
+    # Primeiro padrão detalhado
+    item = re.search(r'Item\s*:\s*(\d+\.\d+)', mensagem)
+    preco = re.search(r'Preço na NF\s*:\s*(\d+[.,]\d+)', mensagem)
+    qtd = re.search(r'Qtd\s*:\s*(\d+)', mensagem)
+    
+    # Caso o primeiro padrão não seja encontrado, tentar o segundo padrão compacto
+    if not item or not preco or not qtd:
+        item = item or re.search(r'Item\s*:(\d+)', mensagem)
+        preco = preco or re.search(r'Preço\s*:(\d+[.,]\d+)', mensagem)
+        qtd = qtd or re.search(r'Qtd\s*:(\d+)', mensagem)
+    
     return (
         item.group(1) if item else "N/A",
         preco.group(1).replace(',', '.') if preco else "N/A",
         qtd.group(1) if qtd else "N/A"
     )
 
-def processar_pedidos(pedidos_file, sim_file, nao_file, erro_file):
+def processar_comparacao(pedidos_file, estoque_file):
     # Carregar os arquivos
     pedidos_df = pd.read_excel(pedidos_file)
-    sim_df = pd.read_excel(sim_file)
-    nao_df = pd.read_excel(nao_file)
-    erro_df = pd.read_excel(erro_file)
+    estoque_df = pd.read_excel(estoque_file, sheet_name="Relatório Estoque Disponível")
     
     # Limpar nomes das colunas para remover espaços extras
-    sim_df.columns = sim_df.columns.str.strip()
-    nao_df.columns = nao_df.columns.str.strip()
-    erro_df.columns = erro_df.columns.str.strip()
+    pedidos_df.columns = pedidos_df.columns.str.strip()
+    estoque_df.columns = estoque_df.columns.str.strip()
+    
+    # Converter SKUs para string e remover pontos e vírgulas
+    pedidos_df["Item"] = pedidos_df["Item"].astype(str).str.replace(r'[^\d]', '', regex=True)
+    estoque_df["PEG"] = estoque_df["PEG"].astype(str).str.replace(r'[^\d]', '', regex=True)
+    
+    # Consolidar quantidades por PEG/SKU
+    pedidos_consolidado = pedidos_df.groupby("Item").agg({"Quantidade": "sum", "Preço NF": "first"}).reset_index()
     
     # Renomear colunas para padronizar
-    if "NU_PEDIDO_VENDA" in sim_df.columns:
-        sim_df = sim_df.rename(columns={"NU_PEDIDO_VENDA": "PEDIDO"})
-    else:
-        raise KeyError("Coluna 'NU_PEDIDO_VENDA' não encontrada no relatório SIM.")
+    estoque_df = estoque_df.rename(columns={"PEG": "Item", "Estoque Fisico": "Estoque"})
     
-    if "NUMERO_PEDIDO" in nao_df.columns:
-        nao_df = nao_df.rename(columns={"NUMERO_PEDIDO": "PEDIDO"})
-    else:
-        raise KeyError("Coluna 'NUMERO_PEDIDO' não encontrada no relatório NÃO.")
+    # Mesclar os dados
+    resultado_df = pd.merge(pedidos_consolidado, estoque_df[["Item", "Estoque"]], on="Item", how="left")
     
-    if "NF_PEDIDO" in erro_df.columns:
-        erro_df = erro_df.rename(columns={"NF_PEDIDO": "PEDIDO"})
-    else:
-        raise KeyError("Coluna 'NF_PEDIDO' não encontrada no relatório ERRO NOTAS ATUALIZADAS.")
+    # Preencher valores ausentes com "Não encontrado saldo"
+    resultado_df["Estoque"].fillna("Não encontrado saldo", inplace=True)
     
-    # Extrair apenas a coluna de pedidos
-    pedidos = pedidos_df.iloc[:, 0].dropna().tolist()
-    resultados = []
-    
-    for pedido in pedidos:
-        resultado = {"Pedido": pedido}
-        
-        # Procurar no relatório SIM
-        sim_match = sim_df[sim_df["PEDIDO"] == pedido]
-        if not sim_match.empty:
-            tipo_erro = str(sim_match.iloc[0].get("TIPO_ERRO", "")).strip()
-            status_sefaz = str(sim_match.iloc[0].get("STATUS_SEFAZ", "")).strip()
-            mensagem = sim_match.iloc[0].get("MENSAGEM", "")
-            
-            if tipo_erro and tipo_erro != "-" and tipo_erro.lower() != "nan":
-                resultado["Resultado"] = tipo_erro
-            elif status_sefaz and status_sefaz.lower() != "nan":
-                resultado["Resultado"] = status_sefaz
-            else:
-                resultado["Resultado"] = "Sem informação disponível"
-            
-            if tipo_erro == "NA":
-                resultado["Resultado"] = mensagem
-            elif tipo_erro == "PO":
-                item, preco, qtd = extrair_dados_po(mensagem)
-                resultado.update({"Item": item, "Preço NF": preco, "Quantidade": qtd})
-            elif tipo_erro == "Concurrent":
-                resultado["Resultado"] = mensagem
-            elif "Ordem de venda" in tipo_erro:
-                resultado["Resultado"] = "Necessário mandar para devolução"
-        
-        # Verificar no relatório ERRO NOTAS ATUALIZADAS
-        if resultado.get("Resultado") in ["SEFAZ Rejeitado", "Erro"]:
-            erro_match = erro_df[erro_df["PEDIDO"] == pedido]
-            if not erro_match.empty:
-                erro_mensagem = str(erro_match.iloc[0].get("NFE_MENSAGEM", "")).strip()
-                resultado["Mensagem Erro"] = erro_mensagem
-        
-        resultados.append(resultado)
-    
-    return pd.DataFrame(resultados)
+    return resultado_df
 
 # Interface no Streamlit
-st.title("Verificação de Pedidos Posigraf")
+st.title("Comparação de Estoque")
 
-pedidos_file = st.file_uploader("Upload do arquivo PEDIDOS POSIGRAF", type=["xlsx"])
-sim_file = st.file_uploader("Upload do arquivo Relatório SIM", type=["xlsx"])
-nao_file = st.file_uploader("Upload do arquivo Relatório NÃO", type=["xlsx"])
-erro_file = st.file_uploader("Upload do arquivo ERRO NOTAS ATUALIZADAS", type=["xlsx"])
+pedidos_file = st.file_uploader("Upload do arquivo RELATORIO_PEDIDOS", type=["xlsx"])
+estoque_file = st.file_uploader("Upload do arquivo ESTOQUE", type=["xlsx"])
 
-if pedidos_file and sim_file and nao_file and erro_file:
+if pedidos_file and estoque_file:
     try:
-        df_resultado = processar_pedidos(pedidos_file, sim_file, nao_file, erro_file)
-        st.write("### Resultados da Análise:")
+        df_resultado = processar_comparacao(pedidos_file, estoque_file)
+        st.write("### Resultados da Comparação:")
         st.dataframe(df_resultado)
 
         # Baixar relatório consolidado
-        nome_saida = "relatorio_pedidos.xlsx"
+        nome_saida = "comparacao_estoque.xlsx"
         df_resultado.to_excel(nome_saida, index=False)
         with open(nome_saida, "rb") as file:
             st.download_button(
