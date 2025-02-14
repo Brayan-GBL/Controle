@@ -3,10 +3,18 @@ import streamlit as st
 import re
 
 def extrair_dados_po(mensagem):
-    """Extrai Item, Preço na NF e Quantidade da mensagem PO."""
-    item = re.search(r'Item\s:(\d+\.\d+)', mensagem)
-    preco = re.search(r'Preço na NF\s:(\d+,\d+)', mensagem)
-    qtd = re.search(r'Qtd:(\d+)', mensagem)
+    """Extrai Item, Preço na NF e Quantidade da mensagem PO considerando diferentes padrões."""
+    # Primeiro padrão detalhado
+    item = re.search(r'Item\s*:\s*(\d+\.\d+)', mensagem)
+    preco = re.search(r'Preço na NF\s*:\s*(\d+[.,]\d+)', mensagem)
+    qtd = re.search(r'Qtd\s*:\s*(\d+)', mensagem)
+    
+    # Caso o primeiro padrão não seja encontrado, tentar o segundo padrão compacto
+    if not item or not preco or not qtd:
+        item = item or re.search(r'Item\s*:(\d+)', mensagem)
+        preco = preco or re.search(r'Preço\s*:(\d+[.,]\d+)', mensagem)
+        qtd = qtd or re.search(r'Qtd\s*:(\d+)', mensagem)
+    
     return (
         item.group(1) if item else "N/A",
         preco.group(1).replace(',', '.') if preco else "N/A",
