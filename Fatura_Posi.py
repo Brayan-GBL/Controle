@@ -25,19 +25,26 @@ def processar_analise(cobranca_file, triagem_file):
     cobranca_df = cobranca_xl.parse(cobranca_sheet)
     triagem_df = triagem_xl.parse(triagem_sheet)
     
-    # Limpar nomes das colunas
+    # Limpar nomes das colunas e remover espaços extras
     cobranca_df.columns = cobranca_df.columns.str.strip()
-    triagem_df.columns = triagem_df.columns.str.strip()
+    triagem_df.columns = triagem_df.columns.str.strip().str.upper()
+    
+    # Exibir colunas disponíveis para depuração
+    print(f"Colunas na aba TRIAGEM: {list(triagem_df.columns)}")
+    
+    # Verificar se a coluna 'NOTA FISCAL' existe na aba TRIAGEM
+    if "NOTA FISCAL" not in triagem_df.columns:
+        raise KeyError(f"Coluna 'NOTA FISCAL' não encontrada na aba TRIAGEM. Colunas disponíveis: {list(triagem_df.columns)}")
     
     # Criar chave de concatenação na base Cobrança
     cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["QTD UND"].astype(str)
     
     # Consolidar quantidades físicas (BOA + RUIM) da triagem
-    triagem_consolidado = triagem_df.groupby("Nota Fiscal").agg({"QTDE FÍSICA (BOM)": "sum", "QTDE FÍSICA (RUIM)": "sum"}).reset_index()
+    triagem_consolidado = triagem_df.groupby("NOTA FISCAL").agg({"QTDE FÍSICA (BOM)": "sum", "QTDE FÍSICA (RUIM)": "sum"}).reset_index()
     triagem_consolidado["CONCAT_DEV"] = triagem_consolidado["QTDE FÍSICA (BOM)"] + triagem_consolidado["QTDE FÍSICA (RUIM)"]
     
     # Mesclar os dados
-    resultado_df = cobranca_df.merge(triagem_consolidado, left_on="NF", right_on="Nota Fiscal", how="left")
+    resultado_df = cobranca_df.merge(triagem_consolidado, left_on="NF", right_on="NOTA FISCAL", how="left")
     
     # Calcular diferença entre quantidades
     resultado_df["DIFERENÇA"] = resultado_df["CONCAT_DEV"] - resultado_df["QTD UND"]
@@ -69,5 +76,5 @@ if cobranca_file and triagem_file:
                 file_name=nome_saida,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-    except ValueError as e:
-        st.error(f"Erro: {str(e)}. Verifique se os arquivos contêm as abas corretas.")
+    except (ValueError, KeyError) as e:
+        st.error(f"Erro: {str(e)}. Verifique se os arquivos contêm as abas e colunas corretas.")
