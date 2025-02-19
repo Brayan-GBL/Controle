@@ -36,6 +36,9 @@ def processar_analise(cobranca_file, triagem_file):
     if "NOTA FISCAL" not in triagem_df.columns:
         raise KeyError(f"Coluna 'NOTA FISCAL' não encontrada na aba TRIAGEM. Colunas disponíveis: {list(triagem_df.columns)}")
     
+    # Filtrar apenas linhas com NF e LOCAL preenchidos
+    cobranca_df = cobranca_df.dropna(subset=["NF", "LOCAL"])
+    
     # Criar chave de concatenação na base Cobrança
     cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["QTD UND"].astype(str)
     
