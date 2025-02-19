@@ -10,10 +10,6 @@ def processar_analise(cobranca_file, triagem_file):
     cobranca_sheets = [s.strip() for s in cobranca_xl.sheet_names]
     triagem_sheets = [s.strip() for s in triagem_xl.sheet_names]
     
-    # Exibir abas disponíveis para depuração
-    print(f"Abas no arquivo de Cobrança: {cobranca_sheets}")
-    print(f"Abas no arquivo de Triagem: {triagem_sheets}")
-    
     # Tentar encontrar a aba correta ignorando espaços e maiúsculas
     cobranca_sheet = next((s for s in cobranca_sheets if "devol" in s.lower()), None)
     triagem_sheet = next((s for s in triagem_sheets if "triagem" in s.lower()), None)
@@ -28,13 +24,6 @@ def processar_analise(cobranca_file, triagem_file):
     # Limpar nomes das colunas e remover espaços extras
     cobranca_df.columns = cobranca_df.columns.str.strip()
     triagem_df.columns = triagem_df.columns.str.strip().str.upper()
-    
-    # Exibir colunas disponíveis para depuração
-    print(f"Colunas na aba TRIAGEM: {list(triagem_df.columns)}")
-    
-    # Verificar se a coluna 'NOTA FISCAL' existe na aba TRIAGEM
-    if "NOTA FISCAL" not in triagem_df.columns:
-        raise KeyError(f"Coluna 'NOTA FISCAL' não encontrada na aba TRIAGEM. Colunas disponíveis: {list(triagem_df.columns)}")
     
     # Filtrar apenas linhas com NF e LOCAL preenchidos
     cobranca_df = cobranca_df.dropna(subset=["NF", "LOCAL"])
@@ -54,7 +43,11 @@ def processar_analise(cobranca_file, triagem_file):
     
     # Criar análise de status
     def classificar_diferenca(row):
-        if row["DIFERENÇA"] > 0 and row["CONCAT_DEV"] > row["QTD UND"]:
+        if row["CONCAT_DEV"] > row["QTD UND"] and row["CONCAT_DEV"] == row["QTDE FÍSICA (BOM)"] + row["QTDE FÍSICA (RUIM)"]:
+            return "Informação incorreta - Devemos pagar mais"
+        elif row["DIFERENÇA"] > 0 and row["QTDE FÍSICA (BOM)"] + row["QTDE FÍSICA (RUIM)"] < row["QTD UND"]:
+            return "Cobrança indevida - Quantidade menor recebida"
+        elif row["DIFERENÇA"] > 0:
             return "Sobra cliente"
         elif row["DIFERENÇA"] < 0:
             return "Digitou errado" if row["CONCAT_DEV"] > 0 else "Não recebemos nada"
