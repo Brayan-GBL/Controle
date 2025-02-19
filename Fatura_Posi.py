@@ -2,25 +2,34 @@ import pandas as pd
 import streamlit as st
 
 def processar_analise(cobranca_file, triagem_file):
-    # Obter e limpar nomes das abas
+    # Carregar todas as abas do arquivo
     cobranca_xl = pd.ExcelFile(cobranca_file)
     triagem_xl = pd.ExcelFile(triagem_file)
+    
+    # Listar todas as abas disponíveis
     cobranca_sheets = [s.strip() for s in cobranca_xl.sheet_names]
     triagem_sheets = [s.strip() for s in triagem_xl.sheet_names]
     
-    # Verificar se as abas corretas existem
-    if "Devoluções" not in cobranca_sheets or "TRIAGEM" not in triagem_sheets:
+    # Exibir abas disponíveis para depuração
+    print(f"Abas no arquivo de Cobrança: {cobranca_sheets}")
+    print(f"Abas no arquivo de Triagem: {triagem_sheets}")
+    
+    # Tentar encontrar a aba correta ignorando espaços e maiúsculas
+    cobranca_sheet = next((s for s in cobranca_sheets if "devol" in s.lower()), None)
+    triagem_sheet = next((s for s in triagem_sheets if "triagem" in s.lower()), None)
+    
+    if not cobranca_sheet or not triagem_sheet:
         raise ValueError(f"Abas não encontradas. Disponíveis: {cobranca_sheets} e {triagem_sheets}")
     
-    # Carregar os arquivos com os nomes corrigidos
-    cobranca_df = cobranca_xl.parse("Devoluções")
-    triagem_df = triagem_xl.parse("TRIAGEM")
+    # Carregar os dados das abas corretas
+    cobranca_df = cobranca_xl.parse(cobranca_sheet)
+    triagem_df = triagem_xl.parse(triagem_sheet)
     
-    # Limpar nomes das colunas para remover espaços extras
+    # Limpar nomes das colunas
     cobranca_df.columns = cobranca_df.columns.str.strip()
     triagem_df.columns = triagem_df.columns.str.strip()
     
-    # Criar a chave de concatenação na base Cobrança
+    # Criar chave de concatenação na base Cobrança
     cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["QTD UND"].astype(str)
     
     # Consolidar quantidades físicas (BOA + RUIM) da triagem
