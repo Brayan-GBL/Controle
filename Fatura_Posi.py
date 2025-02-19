@@ -65,9 +65,9 @@ def processar_analise(cobranca_file, triagem_file):
     return resultado_df[["NF", "CLIENTE", "QTD UND", "LOCAL", "CONCAT_DEV", "DIFERENÇA", "Observação PSD", "Valor Unitário", "Total Nota", "Total Cobrança"]]
 
 # Interface no Streamlit
-st.title("Análise de Cobrança e Triagem")
+st.title("FATURA POSIGRAF")
 
-cobranca_file = st.file_uploader("Upload do arquivo COBRANÇA LOGÍSTICA", type=["xlsx"])
+cobranca_file = st.file_uploader("Upload do arquivo COBRANÇA POSIGRAF", type=["xlsx"])
 triagem_file = st.file_uploader("Upload do arquivo CONFERÊNCIA TRIAGEM", type=["xlsx"])
 
 if cobranca_file and triagem_file:
