@@ -2,12 +2,19 @@ import pandas as pd
 import streamlit as st
 
 def processar_analise(cobranca_file, triagem_file):
-    # Carregar os arquivos com os nomes exatos das abas
-    try:
-        cobranca_df = pd.read_excel(cobranca_file, sheet_name="Devoluções")
-        triagem_df = pd.read_excel(triagem_file, sheet_name="TRIAGEM")
-    except ValueError as e:
-        raise ValueError("Erro ao carregar os arquivos. Verifique se as abas 'Devoluções' e 'TRIAGEM' existem.")
+    # Obter e limpar nomes das abas
+    cobranca_xl = pd.ExcelFile(cobranca_file)
+    triagem_xl = pd.ExcelFile(triagem_file)
+    cobranca_sheets = [s.strip() for s in cobranca_xl.sheet_names]
+    triagem_sheets = [s.strip() for s in triagem_xl.sheet_names]
+    
+    # Verificar se as abas corretas existem
+    if "Devoluções" not in cobranca_sheets or "TRIAGEM" not in triagem_sheets:
+        raise ValueError(f"Abas não encontradas. Disponíveis: {cobranca_sheets} e {triagem_sheets}")
+    
+    # Carregar os arquivos com os nomes corrigidos
+    cobranca_df = cobranca_xl.parse("Devoluções")
+    triagem_df = triagem_xl.parse("TRIAGEM")
     
     # Limpar nomes das colunas para remover espaços extras
     cobranca_df.columns = cobranca_df.columns.str.strip()
