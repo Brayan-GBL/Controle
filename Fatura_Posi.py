@@ -49,10 +49,18 @@ def processar_analise(cobranca_file, triagem_file):
     # Calcular diferença entre quantidades
     resultado_df["DIFERENÇA"] = resultado_df["CONCAT_DEV"] - resultado_df["QTD UND"]
     
-    # Validar se os valores batem
-    resultado_df["VALIDAÇÃO"] = resultado_df["CONCAT_DEV"] == resultado_df["QTD UND"]
+    # Criar análise de status
+    def classificar_diferenca(row):
+        if row["DIFERENÇA"] > 0:
+            return "Sobra cliente"
+        elif row["DIFERENÇA"] < 0:
+            return "Digitou errado" if row["CONCAT_DEV"] > 0 else "Não recebemos nada"
+        else:
+            return "Correto"
     
-    return resultado_df
+    resultado_df["Observação PSD"] = resultado_df.apply(classificar_diferenca, axis=1)
+    
+    return resultado_df[["NF", "CLIENTE", "QTD UND", "LOCAL", "CONCAT_DEV", "DIFERENÇA", "Observação PSD"]]
 
 # Interface no Streamlit
 st.title("Análise de Cobrança e Triagem")
