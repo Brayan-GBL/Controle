@@ -31,12 +31,12 @@ def processar_analise(cobranca_file, triagem_file):
     # Criar chave de concatenação na base Cobrança
     cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["QTD UND"].astype(str)
     
-    # Consolidar quantidades físicas (BOA + RUIM) da triagem
-    triagem_consolidado = triagem_df.groupby("NOTA FISCAL").agg({"QTDE FÍSICA (BOM)": "sum", "QTDE FÍSICA (RUIM)": "sum"}).reset_index()
+    # Consolidar quantidades físicas (BOA + RUIM) da triagem considerando também o LOCAL
+    triagem_consolidado = triagem_df.groupby(["NOTA FISCAL", "PALLET"]).agg({"QTDE FÍSICA (BOM)": "sum", "QTDE FÍSICA (RUIM)": "sum"}).reset_index()
     triagem_consolidado["CONCAT_DEV"] = triagem_consolidado["QTDE FÍSICA (BOM)"] + triagem_consolidado["QTDE FÍSICA (RUIM)"]
     
     # Mesclar os dados
-    resultado_df = cobranca_df.merge(triagem_consolidado, left_on="NF", right_on="NOTA FISCAL", how="left")
+    resultado_df = cobranca_df.merge(triagem_consolidado, left_on=["NF", "LOCAL"], right_on=["NOTA FISCAL", "PALLET"], how="left")
     
     # Calcular diferença entre quantidades
     resultado_df["DIFERENÇA"] = resultado_df["CONCAT_DEV"] - resultado_df["QTD UND"]
@@ -65,9 +65,9 @@ def processar_analise(cobranca_file, triagem_file):
     return resultado_df[["NF", "CLIENTE", "QTD UND", "LOCAL", "CONCAT_DEV", "DIFERENÇA", "Observação PSD", "Valor Unitário", "Total Nota", "Total Cobrança"]]
 
 # Interface no Streamlit
-st.title("FATURA POSIGRAF")
+st.title("Análise de Cobrança e Triagem")
 
-cobranca_file = st.file_uploader("Upload do arquivo COBRANÇA POSIGRAF", type=["xlsx"])
+cobranca_file = st.file_uploader("Upload do arquivo COBRANÇA LOGÍSTICA", type=["xlsx"])
 triagem_file = st.file_uploader("Upload do arquivo CONFERÊNCIA TRIAGEM", type=["xlsx"])
 
 if cobranca_file and triagem_file:
