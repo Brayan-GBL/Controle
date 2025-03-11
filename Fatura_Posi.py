@@ -29,14 +29,19 @@ def processar_analise(cobranca_file, triagem_file):
     cobranca_df = cobranca_df.dropna(subset=["NF", "LOCAL"])
     
     # Criar chave de concatenação na base Cobrança
-    cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["QTD UND"].astype(str)
+    cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["LOCAL"].astype(str)
     
     # Consolidar quantidades físicas (BOA + RUIM) da triagem considerando também o LOCAL
+    triagem_df["QTDE FÍSICA (BOM)"].fillna(0, inplace=True)
+    triagem_df["QTDE FÍSICA (RUIM)"].fillna(0, inplace=True)
     triagem_consolidado = triagem_df.groupby(["NOTA FISCAL", "PALLET"]).agg({"QTDE FÍSICA (BOM)": "sum", "QTDE FÍSICA (RUIM)": "sum"}).reset_index()
     triagem_consolidado["CONCAT_DEV"] = triagem_consolidado["QTDE FÍSICA (BOM)"] + triagem_consolidado["QTDE FÍSICA (RUIM)"]
     
     # Mesclar os dados
     resultado_df = cobranca_df.merge(triagem_consolidado, left_on=["NF", "LOCAL"], right_on=["NOTA FISCAL", "PALLET"], how="left")
+    
+    # Substituir valores NaN por 0 para evitar erros
+    resultado_df[["CONCAT_DEV", "QTDE FÍSICA (BOM)", "QTDE FÍSICA (RUIM)"]].fillna(0, inplace=True)
     
     # Calcular diferença entre quantidades
     resultado_df["DIFERENÇA"] = resultado_df["CONCAT_DEV"] - resultado_df["QTD UND"]
