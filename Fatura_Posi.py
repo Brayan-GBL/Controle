@@ -21,13 +21,12 @@ def processar_analise(cobranca_file, triagem_file):
     # Filtrar apenas linhas com NF e LOCAL preenchidos
     cobranca_df = cobranca_df.dropna(subset=["NF", "LOCAL"])
     # Criar chave de concatenação na base Cobrança
-    cobranca_df["CHAVE"] = cobranca_df["NF"].astype(str) + "_" + cobranca_df["LOCAL"].astype(str)
-    # Consolidar quantidades físicas (BOA + RUIM) da triagem considerando NF e PALLET
-    triagem_df["CHAVE"] = triagem_df["NOTA FISCAL"].astype(str) + "_" + triagem_df["PALLET"].astype(str)
-    triagem_consolidado = triagem_df.groupby("CHAVE").agg({"QTDE FÍSICA (BOM)": "sum", "QTDE FÍSICA (RUIM)": "sum"}).reset_index()
+    cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["QTD UND"].astype(str)
+    # Consolidar quantidades físicas (BOA + RUIM) da triagem
+    triagem_consolidado = triagem_df.groupby("NOTA FISCAL").agg({"QTDE FÍSICA (BOM)": "sum", "QTDE FÍSICA (RUIM)": "sum"}).reset_index()
     triagem_consolidado["CONCAT_DEV"] = triagem_consolidado["QTDE FÍSICA (BOM)"] + triagem_consolidado["QTDE FÍSICA (RUIM)"]
     # Mesclar os dados
-    resultado_df = cobranca_df.merge(triagem_consolidado, on="CHAVE", how="left")
+    resultado_df = cobranca_df.merge(triagem_consolidado, left_on="NF", right_on="NOTA FISCAL", how="left")
     # Calcular diferença entre quantidades
     resultado_df["DIFERENÇA"] = resultado_df["CONCAT_DEV"] - resultado_df["QTD UND"]
     # Criar análise de status
