@@ -46,6 +46,7 @@ def processar_analise(cobranca_file, triagem_file):
         "QTDE FÍSICA (RUIM)": "sum"
     }).reset_index()
 
+    # Soma total de física (boa + ruim)
     triagem_consolidado["CONCAT_DEV"] = (
         triagem_consolidado["QTDE FÍSICA (BOM)"] +
         triagem_consolidado["QTDE FÍSICA (RUIM)"]
@@ -53,6 +54,10 @@ def processar_analise(cobranca_file, triagem_file):
 
     # Mesclar os dados com base na CHAVE
     resultado_df = cobranca_df.merge(triagem_consolidado, on="CHAVE", how="left")
+
+    # Preencher colunas numéricas com zero onde não houve correspondência
+    for col in ["QTDE FÍSICA (BOM)", "QTDE FÍSICA (RUIM)", "CONCAT_DEV"]:
+        resultado_df[col] = resultado_df[col].fillna(0)
 
     # Calcular diferença entre quantidades
     resultado_df["DIFERENÇA"] = resultado_df["CONCAT_DEV"] - resultado_df["QTD UND"]
@@ -80,8 +85,8 @@ def processar_analise(cobranca_file, triagem_file):
 
     # Retorna as colunas finais
     return resultado_df[[
-        "NF", "CLIENTE", "QTD UND", "LOCAL", "CONCAT_DEV",
-        "DIFERENÇA", "Observação PSD", "Valor Unitário",
+        "NF", "CLIENTE", "QTD UND", "LOCAL", "CONCAT_DEV", 
+        "DIFERENÇA", "Observação PSD", "Valor Unitário", 
         "Total Nota", "Total Cobrança"
     ]]
 
