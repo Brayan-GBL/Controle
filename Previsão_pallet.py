@@ -7,9 +7,6 @@ import numpy as np
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_squared_error
 
-# Seta estilo do matplotlib (opcional)
-plt.style.use('seaborn-whitegrid')
-
 st.title("Previsão de Pallets Recebidos")
 
 st.markdown("""
@@ -22,6 +19,14 @@ e prevê a quantidade de pallets que chegarão nos próximos dias.
 - Se o mesmo pallet aparece várias vezes numa data, será contado apenas **1** para aquela data.
 """)
 
+# REMOVER ou COMENTAR a linha abaixo para evitar o erro de estilo
+# plt.style.use('seaborn-whitegrid')  # <-- Linha removida/comentada
+
+# Caso queira usar outro estilo suportado, descomente a seguir:
+# plt.style.use('ggplot')
+# ou: plt.style.use('classic')
+# ou: plt.style.use('default')
+
 # Upload do arquivo
 uploaded_file = st.file_uploader("Selecione seu arquivo com histórico de pallets", type=["xlsx", "csv"])
 
@@ -31,7 +36,8 @@ if uploaded_file:
     if file_name.endswith('.xlsx'):
         df = pd.read_excel(uploaded_file)
     else:
-        df = pd.read_csv(uploaded_file, encoding='utf-8', sep=';', engine='python')  # ajuste se necessário
+        # Ajuste o 'sep' se o CSV usar outro delimitador
+        df = pd.read_csv(uploaded_file, encoding='utf-8', sep=';', engine='python')  
     
     st.subheader("Visualizando as primeiras linhas do DataFrame:")
     st.dataframe(df.head(10))
@@ -44,7 +50,6 @@ if uploaded_file:
             st.stop()
     
     # Converter DATA RECEBIMENTO para datetime
-    # 'dayfirst=True' se o formato for dd/mm/yyyy.
     df["DATA RECEBIMENTO"] = pd.to_datetime(df["DATA RECEBIMENTO"], dayfirst=True, errors='coerce')
     
     # Remove linhas onde DATA RECEBIMENTO ficou inválido
@@ -85,7 +90,7 @@ if uploaded_file:
     train_data = daily_counts.iloc[:train_size]
     test_data = daily_counts.iloc[train_size:]
     
-    # Modelo ARIMA (p, d, q) simples - Ajuste conforme necessidade
+    # Modelo ARIMA (p, d, q) simples
     p, d, q = 1, 1, 1
     try:
         model = ARIMA(train_data["qtde_pallets"], order=(p, d, q))
@@ -93,7 +98,6 @@ if uploaded_file:
         
         # Previsão para o período de teste
         forecast_test = model_fit.forecast(steps=len(test_data))
-        # Convertendo a previsão para Series, com mesmo índice
         forecast_test = pd.Series(forecast_test, index=test_data.index)
         
         # Avaliar desempenho (RMSE)
@@ -122,9 +126,8 @@ if uploaded_file:
         days_to_forecast = st.slider("Selecione quantos dias prever", min_value=7, max_value=365, value=30)
         
         forecast_future = model_final_fit.forecast(steps=days_to_forecast)
-        # Convertendo para Series com datas a partir do fim do histórico
         last_date = daily_counts.index[-1]
-        future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1),
+        future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), 
                                      periods=days_to_forecast, freq='D')
         forecast_future = pd.Series(forecast_future.values, index=future_dates)
         
