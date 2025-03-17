@@ -2,3 +2,10 @@ streamlit
 cohere
 python-docx
 pandas
+streamlit
+cohere
+python-docx
+pandas
+openpyxl
+matplotlib
+numpy
