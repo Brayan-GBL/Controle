@@ -7,16 +7,17 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_squared_error
 
-st.title("Previsão de Pallets (usando DATA TRIAGEM)")
+st.title("Previsão Semanal de Pallets (DATA TRIAGEM)")
 
 st.markdown("""
-**Objetivo**: Ler um arquivo Excel/CSV com histórico de pallets, usando **DATA TRIAGEM** como data de referência
-e prever a quantidade futura de pallets via um _grid search_ de SARIMAX.
+**Objetivo**: Ler um arquivo Excel/CSV com histórico de pallets, usando **DATA TRIAGEM** como data de referência,
+agrupar por semana e prever a quantidade futura de pallets via um _grid search_ de SARIMAX.
 
 **Requisitos**:
 - Colunas **DATA TRIAGEM** e **PALLET** em seu arquivo.
-- Se o mesmo pallet aparece várias vezes na mesma data, conta 1 vez naquele dia.
-- Ajuste os ranges de parâmetros caso precise de um modelo mais complexo.
+- Cada linha representa um registro de pallet; se o mesmo pallet aparecer várias vezes numa semana, será contado 1 vez.
+- Ajuste o range de parâmetros conforme a complexidade dos dados.
+- Ajuste **m=52** se quiser detectar sazonalidade anual em série semanal.
 """)
 
 # Upload do arquivo
@@ -27,6 +28,7 @@ if uploaded_file:
     if uploaded_file.name.lower().endswith('.xlsx'):
         df = pd.read_excel(uploaded_file)
     else:
+        # Ajuste se seu CSV tem outro delimitador
         df = pd.read_csv(uploaded_file, encoding='utf-8', sep=';', engine='python')
     
     st.subheader("Visualizando as primeiras linhas do DataFrame:")
@@ -54,31 +56,38 @@ if uploaded_file:
     st.write(f"Data mínima: {df['DATA TRIAGEM'].min()}")
     st.write(f"Data máxima: {df['DATA TRIAGEM'].max()}")
 
-    # Agrupar por dia e contar pallets únicos
-    daily_counts = df.groupby("DATA TRIAGEM")["PALLET"].nunique().reset_index()
-    daily_counts.rename(columns={"PALLET": "qtde_pallets"}, inplace=True)
-    
-    # Transformar em série temporal (freq = D)
-    daily_counts = daily_counts.set_index("DATA TRIAGEM").asfreq("D")
-    daily_counts["qtde_pallets"] = daily_counts["qtde_pallets"].fillna(0)
+    # -------------------------------------------------------
+    # AGRUPAR POR SEMANA
+    # -------------------------------------------------------
+    # 1) Definir a coluna de data como índice
+    df = df.set_index("DATA TRIAGEM")
 
-    st.subheader("Dados após agregação diária:")
-    st.dataframe(daily_counts.head(15))
+    # 2) Agrupar por semana ("W") e contar pallets únicos
+    weekly_counts = df.resample("W")["PALLET"].nunique()
 
-    # Plot do histórico
-    st.subheader("Histórico de pallets (por DATA TRIAGEM)")
+    # 3) Converter de volta para DataFrame (opcional)
+    weekly_counts = weekly_counts.to_frame(name="qtde_pallets")
+
+    # Preencher semanas sem ocorrência com 0
+    weekly_counts["qtde_pallets"] = weekly_counts["qtde_pallets"].fillna(0)
+
+    st.subheader("Dados após agregação semanal:")
+    st.dataframe(weekly_counts.head(15))
+
+    # Plot do histórico semanal
+    st.subheader("Histórico de pallets (semanal, por DATA TRIAGEM)")
     fig_hist, ax_hist = plt.subplots(figsize=(10,4))
-    ax_hist.plot(daily_counts.index, daily_counts["qtde_pallets"], label="Pallets/dia", color="blue")
-    ax_hist.set_title("Histórico de Pallets Únicos por Dia (Triagem)")
-    ax_hist.set_xlabel("Data de Triagem")
+    ax_hist.plot(weekly_counts.index, weekly_counts["qtde_pallets"], label="Pallets/semana", color="blue")
+    ax_hist.set_title("Histórico de Pallets Únicos por Semana (Triagem)")
+    ax_hist.set_xlabel("Data (Semanas)")
     ax_hist.set_ylabel("Qtde de Pallets")
     ax_hist.legend()
     st.pyplot(fig_hist)
 
     # Dividir em treino (80%) e teste (20%)
-    train_size = int(len(daily_counts) * 0.8)
-    train_data = daily_counts.iloc[:train_size]
-    test_data = daily_counts.iloc[train_size:]
+    train_size = int(len(weekly_counts) * 0.8)
+    train_data = weekly_counts.iloc[:train_size]
+    test_data = weekly_counts.iloc[train_size:]
 
     y_train = train_data["qtde_pallets"]
     y_test = test_data["qtde_pallets"]
@@ -86,22 +95,22 @@ if uploaded_file:
     # ---------------------------------------------------
     # GRID SEARCH SARIMAX
     # ---------------------------------------------------
-    p_values = [0, 1, 2, 3]
-    d_values = [0, 1, 2]
-    q_values = [0, 1, 2, 3]
+    p_values = [0, 1, 2]
+    d_values = [0, 1]
+    q_values = [0, 1, 2]
 
-    P_values = [0, 1]  # sazonal p
-    D_values = [0, 1]  # sazonal d
-    Q_values = [0, 1]  # sazonal q
-
-    seasonal_period = 7  # Sazonalidade semanal
+    # Sazonalidade: se quiser capturar padrão anual em série semanal, m=52
+    P_values = [0, 1]  
+    D_values = [0, 1]
+    Q_values = [0, 1]
+    seasonal_period = 52  # Semanas no ano (aprox. 52)
 
     best_aic = np.inf
     best_order = None
     best_seasonal_order = None
     best_model = None
 
-    with st.spinner("Executando grid search SARIMAX..."):
+    with st.spinner("Executando grid search SARIMAX (agrupamento semanal)..."):
         for p in p_values:
             for d in d_values:
                 for q in q_values:
@@ -142,13 +151,13 @@ if uploaded_file:
     st.write(f"**RMSE no teste**: {rmse_test:.2f}")
 
     # Plot Treino/Teste/Previsão
-    st.subheader("Treino vs. Teste vs. Previsão no teste")
+    st.subheader("Treino vs. Teste vs. Previsão no teste (Semanal)")
     fig_pred, ax_pred = plt.subplots(figsize=(10,4))
     ax_pred.plot(y_train.index, y_train, label="Treino", color="blue")
     ax_pred.plot(y_test.index, y_test, label="Teste (Real)", color="green")
     ax_pred.plot(forecast_test.index, forecast_test, label="Previsão (Teste)", color="red")
-    ax_pred.set_title("Treino x Teste x Previsão (SARIMAX)")
-    ax_pred.set_xlabel("Data de Triagem")
+    ax_pred.set_title("Treino x Teste x Previsão (SARIMAX - Semanal)")
+    ax_pred.set_xlabel("Data (Semanas)")
     ax_pred.set_ylabel("Qtde de Pallets")
     ax_pred.legend()
     st.pyplot(fig_pred)
@@ -157,10 +166,10 @@ if uploaded_file:
     # MODELO FINAL: Ajustar em todo o dataset
     # ---------------------------------------------------
     st.markdown("---")
-    st.subheader("Previsão futura")
+    st.subheader("Previsão futura (semanal)")
 
     final_model = SARIMAX(
-        daily_counts["qtde_pallets"],
+        weekly_counts["qtde_pallets"],
         order=best_order,
         seasonal_order=best_seasonal_order,
         enforce_stationarity=False,
@@ -168,28 +177,28 @@ if uploaded_file:
     )
     final_result = final_model.fit(disp=False)
 
-    # Quantos dias prever?
-    days_to_forecast = st.slider("Dias para prever:", 7, 365, 30)
-    forecast_future = final_result.forecast(steps=days_to_forecast)
+    # Quantas semanas prever?
+    weeks_to_forecast = st.slider("Semanas para prever:", 4, 52, 12)
+    forecast_future = final_result.forecast(steps=weeks_to_forecast)
 
-    # Índice de datas futuras
-    last_date = daily_counts.index[-1]
+    # Índice de datas futuras (semanal)
+    last_date = weekly_counts.index[-1]
     future_dates = pd.date_range(
-        start=last_date + pd.Timedelta(days=1),
-        periods=days_to_forecast,
-        freq='D'
+        start=last_date + pd.Timedelta(days=7), 
+        periods=weeks_to_forecast, 
+        freq='W'
     )
     forecast_future = pd.Series(forecast_future.values, index=future_dates)
 
-    st.write("Previsão para os próximos dias (baseado em DATA TRIAGEM):")
+    st.write("Previsão de pallets (semana) para as próximas semanas:")
     st.dataframe(forecast_future.rename("qtde_pallets_previsao"))
 
     # Plot do histórico + previsão futura
     fig_fut, ax_fut = plt.subplots(figsize=(10,4))
-    ax_fut.plot(daily_counts.index, daily_counts["qtde_pallets"], label="Histórico", color="blue")
+    ax_fut.plot(weekly_counts.index, weekly_counts["qtde_pallets"], label="Histórico", color="blue")
     ax_fut.plot(forecast_future.index, forecast_future, label="Previsão Futura", color="orange")
-    ax_fut.set_title("Histórico x Previsão Futura (SARIMAX)")
-    ax_fut.set_xlabel("Data de Triagem")
+    ax_fut.set_title("Histórico x Previsão Futura (SARIMAX - Semanal)")
+    ax_fut.set_xlabel("Data (Semanas)")
     ax_fut.set_ylabel("Qtde de Pallets")
     ax_fut.legend()
     st.pyplot(fig_fut)
