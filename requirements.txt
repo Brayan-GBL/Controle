@@ -3,3 +3,5 @@ cohere
 python-docx
 pandas
 openpyxl
+matplotlib
+numpy
