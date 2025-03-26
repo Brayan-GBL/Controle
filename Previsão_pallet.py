@@ -1,22 +1,16 @@
 import streamlit as st
 
-# --------------------- CSS (Firulas) ---------------------
+# ---------- CSS (Firulas) ----------
 st.markdown("""
 <style>
-/* Fundo geral do app */
 .main {
     background-color: #FAFAFA;
-    /* Se quiser imagem de fundo, descomente:
-    background-image: url('https://example.com/seu-fundo.jpg');
-    background-size: cover;
-    background-position: center;
-    */
 }
 
 /* Título grande */
 .big-title {
     font-size: 2.0em;
-    color: #D35400; /* um laranja escuro */
+    color: #D35400; /* Laranja escuro */
     margin-bottom: 0.5em;
     font-weight: bold;
     text-align: center;
@@ -32,30 +26,17 @@ st.markdown("""
     font-size:1.05em;
 }
 
-/* Estilizando expanders (só se preferir) */
+/* Expander style */
 .streamlit-expanderHeader {
     font-weight: bold;
     color: #2C3E50;
     font-size:1.1em;
 }
-
-/* Tabs: mudando cor do texto e background */
-div[data-baseweb="tabs"] .scrollable {
-    background-color: #F0F0F0;
-}
-
-/* Título das abas */
-div[data-baseweb="tab"] {
-    font-size: 1.05em;
-    font-weight: bold;
-    color: #333;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# -------------- Título principal -----------------
+# ---------- Título e introdução ----------
 st.markdown("<div class='big-title'>Guia Completo de Devolução e Procedimentos</div>", unsafe_allow_html=True)
-
 st.markdown("""
 <div class='highlight-box'>
 Bem-vindo(a)! Aqui você encontra as principais regras, procedimentos e instruções 
@@ -63,9 +44,8 @@ relacionadas às devoluções, cancelamentos, coletas, faturamento, operações 
 </div>
 """, unsafe_allow_html=True)
 
-
-# --------------------- ABAS (TÓPICOS) ---------------------
-abas = [
+# ---------- Lista de Tópicos (via RADIO) ----------
+topicos = [
     "1. Cancelamento / Recusa de Pedidos",
     "2. Emissão de NF e Coleta (Não Contribuinte)",
     "3. Solicitação de Coleta (Contribuinte)",
@@ -77,10 +57,10 @@ abas = [
     "9. Operações (115-8, 067-3, 163-1)"
 ]
 
-tabs = st.tabs(abas)
+escolha = st.radio("Selecione o tópico:", topicos)
 
-# --------------- ABA 1 ---------------
-with tabs[0]:
+# ---------- CONTEÚDO DE CADA TÓPICO ----------
+if escolha == "1. Cancelamento / Recusa de Pedidos":
     st.subheader("1. CANCELAMENTO | RECUSA DE PEDIDOS")
 
     with st.expander("Quando usar?"):
@@ -107,8 +87,7 @@ with tabs[0]:
 - O financeiro usa o crédito p/ abater NF cancelada/recusada.
 """)
 
-# --------------- ABA 2 ---------------
-with tabs[1]:
+elif escolha == "2. Emissão de NF e Coleta (Não Contribuinte)":
     st.subheader("2. EMISSÃO DE NF E COLETA (CLIENTE NÃO CONTRIBUINTE)")
 
     with st.expander("Quando usar?"):
@@ -132,8 +111,7 @@ with tabs[1]:
 - Se houver 2 tentativas de coleta sem sucesso, cancela-se o agendamento.
 """)
 
-# --------------- ABA 3 ---------------
-with tabs[2]:
+elif escolha == "3. Solicitação de Coleta (Contribuinte)":
     st.subheader("3. SOLICITAÇÃO DE COLETA (CLIENTE CONTRIBUINTE)")
 
     with st.expander("Quando usar?"):
@@ -158,8 +136,7 @@ with tabs[2]:
 - Manter dados de contato atualizados p/ evitar falhas na coleta.
 """)
 
-# --------------- ABA 4 ---------------
-with tabs[3]:
+elif escolha == "4. Emissão de NF e Coleta LNE":
     st.subheader("4. EMISSÃO DE NF E COLETA LNE")
 
     with st.expander("Quando usar?"):
@@ -185,8 +162,7 @@ with tabs[3]:
 - 2 tentativas sem sucesso cancelam a coleta.
 """)
 
-# --------------- ABA 5 ---------------
-with tabs[4]:
+elif escolha == "5. Devolução c/ Frete por Conta do Cliente":
     st.subheader("5. DEVOLUÇÃO COM FRETE POR CONTA DO CLIENTE")
 
     with st.expander("Quando usar?"):
@@ -213,8 +189,7 @@ with tabs[4]:
 - Sempre encaminhar NF ao cliente; o transportador pode exigir.
 """)
 
-# --------------- ABA 6 ---------------
-with tabs[5]:
+elif escolha == "6. Faturamento Vendas Fora do LNE":
     st.subheader("6. FATURAMENTO VENDAS FORA DO LNE")
 
     with st.expander("Quando usar?"):
@@ -237,8 +212,7 @@ with tabs[5]:
 - Verifique sempre se há sobras ou divergências no SGE para não gerar mais devoluções.
 """)
 
-# --------------- ABA 7 ---------------
-with tabs[6]:
+elif escolha == "7. Troca de NF (CNPJ/Desconto)":
     st.subheader("7. TROCA DE NF PARA CORREÇÃO DE CNPJ / DESCONTO")
 
     with st.expander("Quando usar?"):
@@ -262,36 +236,39 @@ with tabs[6]:
 - Verificar prazos; se muito tarde, pode ser recusado.
 """)
 
-# --------------- ABA 8 ---------------
-with tabs[7]:
+elif escolha == "8. Transportadoras":
     st.subheader("8. TRANSPORTADORAS (ENDEREÇOS)")
 
     with st.expander("Braspress"):
         st.write("""**CNPJ**: 48.740.351/0003-27  
-Endereço: RUA JOAO BETTEGA, 3802 – CIDADE INDUSTRIAL, CURITIBA/PR""")
+Endereço: RUA JOAO BETTEGA, 3802 – CIDADE INDUSTRIAL, CURITIBA/PR
+""")
 
     with st.expander("Cruzeiro do Sul"):
         st.write("""**CNPJ**: 03.232.675/0061-95  
 No Oracle: "03232675006195-PR-PARCEL-Padrao"  
-Endereço: AV. DEZ DE DEZEMBRO, 5680 – JARDIM PIZA, LONDRINA/PR""")
+Endereço: AV. DEZ DE DEZEMBRO, 5680 – JARDIM PIZA, LONDRINA/PR
+""")
 
     with st.expander("FL BRASIL (SOLISTICA)"):
         st.write("""**CNPJ**: 18.233.211/0028-50  
 IE: 9076066008  
-Endereço: RODOVIA BR 116, 22301 – TATUQUARA, CURITIBA/PR""")
+Endereço: RODOVIA BR 116, 22301 – TATUQUARA, CURITIBA/PR
+""")
 
     with st.expander("Local Express"):
         st.write("""**CNPJ**: 06.199.523/0001-95  
 IE: 9030307558  
-Endereço: R FORMOSA, 131 – PLANTA PORTAL DA SERRA, PINHAIS/PR""")
+Endereço: R FORMOSA, 131 – PLANTA PORTAL DA SERRA, PINHAIS/PR
+""")
 
     with st.expander("Rodonaves"):
         st.write("""**CNPJ**: 44.914.992/0017-03  
 IE: 6013031914  
-Endereço: RUA RIO GRANDE DO NORTE, 1200, CENTRO, LONDRINA/PR""")
+Endereço: RUA RIO GRANDE DO NORTE, 1200, CENTRO, LONDRINA/PR
+""")
 
-# --------------- ABA 9 ---------------
-with tabs[8]:
+elif escolha == "9. Operações (115-8, 067-3, 163-1)":
     st.subheader("9. OPERAÇÕES (115-8, 067-3, 163-1)")
 
     with st.expander("Operação 163-1"):
@@ -303,6 +280,6 @@ with tabs[8]:
     with st.expander("Operação 115-8"):
         st.write("""Permanecerá ativa para casos que não necessitam de movimentação financeira.""")
 
-# ---------------------------------------------------------
-st.markdown("<br><hr style='border:1px solid #DDD'/><br>", unsafe_allow_html=True)
+# --------------------- Rodapé ou qualquer extra -------------
+st.write("---")
 st.info("Dúvidas adicionais? Contate o setor responsável ou consulte a documentação interna.")
