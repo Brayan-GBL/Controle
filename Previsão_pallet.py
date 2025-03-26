@@ -1,207 +1,204 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 
-# SARIMAX em statsmodels
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import mean_squared_error
+# Dicionário contendo os 9 tópicos principais + 1 extra (se quiser).
+# Dentro de cada tópico, dividimos em subitens ("Quando usar?", "Procedimentos", "Pontos Importantes")
+conteudo = {
+    "1. CANCELAMENTO | RECUSA DE PEDIDOS": {
+        "Quando usar?": """\
+- **Cancelamento** se o pedido e NF puderem ser cancelados no sistema (até 7 dias). 
+  O setor de Gestão de Pedidos confirma se não foi expedido.
+- **Recusa/Desistência** se o cliente rejeitou o material no ato da entrega ou desistiu após expedição. 
+  Acionar Transporte para retorno.
+""",
+        "Procedimentos": """\
+1. **Emitir RMA** (se aplicável), sem transportadora e "FOB: Sem frete". Observações: "Pedido cancelado" ou "Pedido recusado".
+2. **Abrir SAC** (Tipo: Solicitação; Assunto: "Cancelamento pedido X" ou "Pedido X recusado"). 
+   Preencher Filial, RMA, NF, etc.
+3. **Se LNE ou Remessa Antecipada**: Não emite RMA; siga o mesmo fluxo no SAC, marcando "Loja na Escola / Remessa antecipada" e NF da remessa LNE.
+4. **Logística Devolução** emite NF de devolução, notifica via CRM e aplica crédito se for RMA.
+""",
+        "Pontos Importantes": """\
+- Se exceder 7 dias ou já expedido, trata-se de devolução simbólica (não cancelamento).
+- Em recusa no ato da entrega, o setor de Transportes deve acionar retorno da mercadoria.
+- O financeiro usa o crédito p/ abater NF cancelada/recusada.
+"""
+    },
 
-st.title("Previsão Semanal de Pallets (DATA TRIAGEM)")
+    "2. EMISSÃO DE NF E COLETA (CLIENTE NÃO CONTRIBUINTE)": {
+        "Quando usar?": """\
+- Cliente sem IE, impossibilitado de emitir NF de devolução.
+- A empresa vendedora (PSD) emite nota de entrada para retorno ao estoque.
+""",
+        "Procedimentos": """\
+1. **Verificar** se a devolução está dentro de regras (prazos, etc.).
+2. **Emitir RMA** no ORACLE (ver "Devoluções Oracle - Como criar RMA").
+3. **Abrir SAC** (Assunto: "Solicitação NF e coleta (não contribuinte)"), preenchendo Filial, RMA, NF, transportadora.
+4. **Logística Devolução** emite NF, gera crédito, avisa CRM e Transportes para coleta (TMS).
+""",
+        "Pontos Importantes": """\
+- Encaminhar NF ao cliente; o transportador pode exigir.
+- A quantidade de caixas deve bater com a NF, lacradas e identificadas.
+- Se houver 2 tentativas de coleta sem sucesso, cancela-se o agendamento.
+"""
+    },
 
-st.markdown("""
-**Objetivo**: Ler um arquivo Excel/CSV com histórico de pallets, usando **DATA TRIAGEM** como data de referência,
-agrupar por semana e prever a quantidade futura de pallets via um _grid search_ de SARIMAX.
+    "3. SOLICITAÇÃO DE COLETA (CLIENTE CONTRIBUINTE)": {
+        "Quando usar?": """\
+- Cliente com IE: ele emite a NF de devolução. 
+- Frete normalmente FOB (destinatário). 
+- Se o cliente pagar frete, veja "Devolução com Frete por Conta do Cliente".
+""",
+        "Procedimentos": """\
+1. **Emitir RMA** no ORACLE (gera "Autorização de Devolução de Produto").
+2. **Cliente** emite a NF de devolução, corrigindo se houver divergências.
+3. **Abrir SAC** ("Solicitação NF e coleta contribuinte"), anexar PDF da NF se exigido.
+4. **Logística Devolução** confere a NF; se correto, manda ao Transportes (TMS).
+""",
+        "Pontos Importantes": """\
+- Notas acima de 15 dias podem ser recusadas.
+- Caixas lacradas e identificadas (quantidade deve bater com a NF).
+- Manter dados de contato atualizados p/ evitar falhas na coleta.
+"""
+    },
 
-**Requisitos**:
-- Colunas **DATA TRIAGEM** e **PALLET** em seu arquivo.
-- Cada linha representa um registro de pallet; se o mesmo pallet aparecer várias vezes numa semana, será contado 1 vez.
-- Ajuste o range de parâmetros conforme a complexidade dos dados.
-- Ajuste **m=52** se quiser detectar sazonalidade anual em série semanal.
-""")
+    "4. EMISSÃO DE NF E COLETA LNE": {
+        "Quando usar?": """\
+- Remessa antecipada / Loja na Escola (materiais em poder de terceiros).
+- Sobras não vendidas precisam ser baixadas e recolhidas.
+- Fluxo distinto, sem RMA (em geral).
+""",
+        "Procedimentos": """\
+1. Confronte itens com relatórios SGE/Oracle.
+2. Preencha formulário "LNE" com dados para emissão NF e coleta.
+3. **Abra SAC** ("Emissão de NF e coleta LNE"), anexe formulário + NF Remessa LNE.
+4. **Logística** emite NF, baixa estoque de terceiros, notifica CRM. 
+   Transportes agenda coleta no TMS.
+""",
+        "Pontos Importantes": """\
+- Encaminhar NF ao cliente p/ evitar problemas na coleta.
+- Mesmo nº de caixas da NF, tudo lacrado e acessível.
+- 2 tentativas sem sucesso cancelam a coleta.
+"""
+    },
 
-# Upload do arquivo
-uploaded_file = st.file_uploader("Selecione seu arquivo Excel ou CSV", type=["xlsx", "csv"])
+    "5. DEVOLUÇÃO COM FRETE POR CONTA DO CLIENTE": {
+        "Quando usar?": """\
+- O cliente arca com frete (por contrato ou acordo). 
+- Pode usar transportadora da base ou contratar própria.
+""",
+        "Procedimentos": """\
+**Situação A: Cliente paga frete mas usa nossa transportadora**
+1. Emita RMA (não contribuinte = FOB, contribuinte = CIF).
+2. Abra SAC "Devolução com frete por conta do cliente," preencha Filial, RMA, NF. "Cliente irá contratar frete? Não."
 
-if uploaded_file:
-    # Ler CSV ou Excel
-    if uploaded_file.name.lower().endswith('.xlsx'):
-        df = pd.read_excel(uploaded_file)
+**Situação B: Cliente contrata transportadora externa**
+1. Se não contribuinte, ver se a transportadora está na base; se não, informe dados manualmente. Se contribuinte, ele define na NF.
+2. Abra SAC igual acima, mas "Cliente irá contratar frete? Sim."
+""",
+        "Pontos Importantes": """\
+- Se não contribuinte, Logística emite NF; se contribuinte, o cliente emite NF.
+- Se usar nossa base, nós agendamos coleta. Se for outra, o cliente acompanha a mercadoria.
+- Sempre encaminhar NF ao cliente; o transportador pode exigir.
+"""
+    },
+
+    "6. FATURAMENTO VENDAS FORA DO LNE": {
+        "Quando usar?": """\
+- Houve vendas por fora na escola (fora da plataforma).
+- Precisamos ajustar estoque e faturar contra a escola.
+""",
+        "Procedimentos": """\
+1. **Devolução simbólica** dos itens "fora" para corrigir estoque.
+2. Emitir **pedido no SGE** (operação 067-3) sem movimentar estoque físico.
+3. **Abrir SAC** p/ Logística Devolução, informar nº pedido SGE, NF Remessa LNE.
+4. Logística emite nota de devolução simbólica, baixa saldo e fatura manualmente o pedido.
+""",
+        "Pontos Importantes": """\
+- O solicitante é notificado via CRM quando concluído.
+- Verifique sempre se há sobras ou divergências no SGE para não gerar mais devoluções.
+"""
+    },
+
+    "7. TROCA DE NF PARA CORREÇÃO DE CNPJ / DESCONTO": {
+        "Quando usar?": """\
+- Devolução simbólica/virtual, sem retorno físico. 
+- Corrigir valores, desconto, CNPJ ou migrar tipo de venda (ex.: LNE → Direta).
+""",
+        "Procedimentos": """\
+1. Emita RMA sem transportadora (FOB "Sem frete").
+2. Observações: "Devolução simbólica."
+3. Abra SAC ("Troca de NF p/ correção de desconto/CNPJ"), informe nº pedido SGE, NF p/ crédito.
+4. Logística gera crédito para abater faturamento incorreto e cria novo faturamento.
+""",
+        "Pontos Importantes": """\
+- Se for operação antecipada + remessa futura, podem ser 2 RMAs com mesmos itens.
+- RMA e faturamento entram na mesma solicitação (tratativa sistêmica). 
+- Verificar prazos; se muito tarde, pode ser recusado.
+"""
+    },
+
+    "8. TRANSPORTADORAS (ENDEREÇOS)": {
+        "Braspress": """\
+**CNPJ**: 48.740.351/0003-27  
+Endereço: RUA JOAO BETTEGA, 3802 – CURITIBA/PR
+""",
+        "Cruzeiro do Sul": """\
+**CNPJ**: 03.232.675/0061-95  
+Uso no Oracle: "03232675006195-PR-PARCEL-Padrao"  
+Endereço: AV. DEZ DE DEZEMBRO, 5680 – LONDRINA/PR
+""",
+        "FL Brasil (Solistica)": """\
+**CNPJ**: 18.233.211/0028-50  
+Endereço: RODOVIA BR 116, 22301 – TATUQUARA, CURITIBA/PR
+""",
+        "Local Express": """\
+**CNPJ**: 06.199.523/0001-95  
+Endereço: R FORMOSA, 131 – PINHAIS/PR
+""",
+        "Rodonaves": """\
+**CNPJ**: 44.914.992/0017-03  
+Endereço: RUA RIO GRANDE DO NORTE, 1200, LONDRINA/PR
+"""
+    },
+
+    "9. OPERAÇÕES (115-8, 067-3, 163-1)": {
+        "Operação 163-1": """\
+Exclusiva para correções sistêmicas no SGE (CNPJ, descontos incorretos, erros de operação).
+""",
+        "Operação 067-3": """\
+Destinada à correção de vendas realizadas fora da Loja na Escola.
+""",
+        "Operação 115-8": """\
+Permanece para casos sem movimentação financeira; ex.: migrações de tipo de venda.
+"""
+    },
+
+    "10. OUTROS / EXTRAS": {
+        "Observações Gerais": """\
+(Use este espaço para adicionar futuros tópicos, contatos úteis, links de formulários etc.)
+"""
+    }
+}
+
+st.title("GUIA DE DEVOLUÇÃO E PROCEDIMENTOS")
+
+topicos = list(conteudo.keys())
+escolha_topico = st.selectbox("Selecione o tópico:", [""] + topicos)
+
+if escolha_topico and escolha_topico in conteudo:
+    # Subitens
+    subitens = conteudo[escolha_topico]
+    # Se for dict com "Quando usar?", "Procedimentos", "Pontos Importantes", exibimos de um jeito
+    # Se for o caso de "Transportadoras" ou "Operações," pode ser subchaves diferentes
+    if isinstance(subitens, dict):
+        # Se cada key for "Quando usar?" etc.
+        opcoes_sub = list(subitens.keys())
+        escolha_sub = st.selectbox("Selecione o sub-item:", [""] + opcoes_sub)
+
+        if escolha_sub and escolha_sub in subitens:
+            # Exibir texto
+            st.write(subitens[escolha_sub])
     else:
-        # Ajuste se seu CSV tem outro delimitador
-        df = pd.read_csv(uploaded_file, encoding='utf-8', sep=';', engine='python')
-    
-    st.subheader("Visualizando as primeiras linhas do DataFrame:")
-    st.dataframe(df.head(10))
-
-    # Limpar espaços nos nomes das colunas
-    df.columns = df.columns.str.strip()
-
-    # Verificar se temos as colunas necessárias
-    expected_cols = ["DATA TRIAGEM", "PALLET"]
-    for col in expected_cols:
-        if col not in df.columns:
-            st.error(f"Coluna '{col}' não encontrada! Ajuste o arquivo.")
-            st.stop()
-
-    # Converter DATA TRIAGEM para datetime
-    df["DATA TRIAGEM"] = pd.to_datetime(df["DATA TRIAGEM"], dayfirst=True, errors='coerce')
-
-    # Remover linhas com data inválida
-    df = df.dropna(subset=["DATA TRIAGEM"])
-
-    # Ordenar pelas datas de triagem
-    df = df.sort_values("DATA TRIAGEM")
-
-    st.write(f"Data mínima: {df['DATA TRIAGEM'].min()}")
-    st.write(f"Data máxima: {df['DATA TRIAGEM'].max()}")
-
-    # -------------------------------------------------------
-    # AGRUPAR POR SEMANA
-    # -------------------------------------------------------
-    # 1) Definir a coluna de data como índice
-    df = df.set_index("DATA TRIAGEM")
-
-    # 2) Agrupar por semana ("W") e contar pallets únicos
-    weekly_counts = df.resample("W")["PALLET"].nunique()
-
-    # 3) Converter de volta para DataFrame (opcional)
-    weekly_counts = weekly_counts.to_frame(name="qtde_pallets")
-
-    # Preencher semanas sem ocorrência com 0
-    weekly_counts["qtde_pallets"] = weekly_counts["qtde_pallets"].fillna(0)
-
-    st.subheader("Dados após agregação semanal:")
-    st.dataframe(weekly_counts.head(15))
-
-    # Plot do histórico semanal
-    st.subheader("Histórico de pallets (semanal, por DATA TRIAGEM)")
-    fig_hist, ax_hist = plt.subplots(figsize=(10,4))
-    ax_hist.plot(weekly_counts.index, weekly_counts["qtde_pallets"], label="Pallets/semana", color="blue")
-    ax_hist.set_title("Histórico de Pallets Únicos por Semana (Triagem)")
-    ax_hist.set_xlabel("Data (Semanas)")
-    ax_hist.set_ylabel("Qtde de Pallets")
-    ax_hist.legend()
-    st.pyplot(fig_hist)
-
-    # Dividir em treino (80%) e teste (20%)
-    train_size = int(len(weekly_counts) * 0.8)
-    train_data = weekly_counts.iloc[:train_size]
-    test_data = weekly_counts.iloc[train_size:]
-
-    y_train = train_data["qtde_pallets"]
-    y_test = test_data["qtde_pallets"]
-
-    # ---------------------------------------------------
-    # GRID SEARCH SARIMAX
-    # ---------------------------------------------------
-    p_values = [0, 1, 2]
-    d_values = [0, 1]
-    q_values = [0, 1, 2]
-
-    # Sazonalidade: se quiser capturar padrão anual em série semanal, m=52
-    P_values = [0, 1]  
-    D_values = [0, 1]
-    Q_values = [0, 1]
-    seasonal_period = 52  # Semanas no ano (aprox. 52)
-
-    best_aic = np.inf
-    best_order = None
-    best_seasonal_order = None
-    best_model = None
-
-    with st.spinner("Executando grid search SARIMAX (agrupamento semanal)..."):
-        for p in p_values:
-            for d in d_values:
-                for q in q_values:
-                    for P in P_values:
-                        for D in D_values:
-                            for Q in Q_values:
-                                try:
-                                    model = SARIMAX(
-                                        y_train,
-                                        order=(p, d, q),
-                                        seasonal_order=(P, D, Q, seasonal_period),
-                                        enforce_stationarity=False,
-                                        enforce_invertibility=False
-                                    )
-                                    result = model.fit(disp=False)
-                                    if result.aic < best_aic:
-                                        best_aic = result.aic
-                                        best_order = (p, d, q)
-                                        best_seasonal_order = (P, D, Q, seasonal_period)
-                                        best_model = result
-                                except:
-                                    pass
-
-    if best_model is None:
-        st.error("Nenhum modelo foi ajustado com sucesso na grid search!")
-        st.stop()
-    
-    st.write(f"**Melhor AIC**: {best_aic:.2f}")
-    st.write(f"**Melhor order**: {best_order}")
-    st.write(f"**Melhor seasonal_order**: {best_seasonal_order}")
-
-    # Previsão no conjunto de teste
-    forecast_test = best_model.forecast(steps=len(test_data))
-    forecast_test = pd.Series(forecast_test, index=test_data.index)
-
-    # Avaliar RMSE
-    rmse_test = np.sqrt(mean_squared_error(y_test, forecast_test))
-    st.write(f"**RMSE no teste**: {rmse_test:.2f}")
-
-    # Plot Treino/Teste/Previsão
-    st.subheader("Treino vs. Teste vs. Previsão no teste (Semanal)")
-    fig_pred, ax_pred = plt.subplots(figsize=(10,4))
-    ax_pred.plot(y_train.index, y_train, label="Treino", color="blue")
-    ax_pred.plot(y_test.index, y_test, label="Teste (Real)", color="green")
-    ax_pred.plot(forecast_test.index, forecast_test, label="Previsão (Teste)", color="red")
-    ax_pred.set_title("Treino x Teste x Previsão (SARIMAX - Semanal)")
-    ax_pred.set_xlabel("Data (Semanas)")
-    ax_pred.set_ylabel("Qtde de Pallets")
-    ax_pred.legend()
-    st.pyplot(fig_pred)
-
-    # ---------------------------------------------------
-    # MODELO FINAL: Ajustar em todo o dataset
-    # ---------------------------------------------------
-    st.markdown("---")
-    st.subheader("Previsão futura (semanal)")
-
-    final_model = SARIMAX(
-        weekly_counts["qtde_pallets"],
-        order=best_order,
-        seasonal_order=best_seasonal_order,
-        enforce_stationarity=False,
-        enforce_invertibility=False
-    )
-    final_result = final_model.fit(disp=False)
-
-    # Quantas semanas prever?
-    weeks_to_forecast = st.slider("Semanas para prever:", 4, 52, 12)
-    forecast_future = final_result.forecast(steps=weeks_to_forecast)
-
-    # Índice de datas futuras (semanal)
-    last_date = weekly_counts.index[-1]
-    future_dates = pd.date_range(
-        start=last_date + pd.Timedelta(days=7), 
-        periods=weeks_to_forecast, 
-        freq='W'
-    )
-    forecast_future = pd.Series(forecast_future.values, index=future_dates)
-
-    st.write("Previsão de pallets (semana) para as próximas semanas:")
-    st.dataframe(forecast_future.rename("qtde_pallets_previsao"))
-
-    # Plot do histórico + previsão futura
-    fig_fut, ax_fut = plt.subplots(figsize=(10,4))
-    ax_fut.plot(weekly_counts.index, weekly_counts["qtde_pallets"], label="Histórico", color="blue")
-    ax_fut.plot(forecast_future.index, forecast_future, label="Previsão Futura", color="orange")
-    ax_fut.set_title("Histórico x Previsão Futura (SARIMAX - Semanal)")
-    ax_fut.set_xlabel("Data (Semanas)")
-    ax_fut.set_ylabel("Qtde de Pallets")
-    ax_fut.legend()
-    st.pyplot(fig_fut)
-
+        st.write(subitens)  # se fosse apenas string, mas aqui estamos usando dict
 else:
-    st.info("Faça upload de um arquivo para iniciar a previsão.")
+    st.write("Selecione um tópico no menu acima para exibir detalhes.")
