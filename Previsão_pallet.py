@@ -60,7 +60,7 @@ if escolha_topico:
             else:
                 st.warning("Este subitem não possui texto definido.")
 
-    elif escolha_topico == "8. Transportadoras":
+    elif escolha_topico == "9. Transportadoras":
         nomes = list(transportadoras.keys())
         escolha_transp = st.selectbox("🚚 Selecione a Transportadora:", ["" ] + nomes)
 
@@ -68,7 +68,7 @@ if escolha_topico:
             st.markdown(f"<div class='my-subtitle'>{escolha_transp}</div>", unsafe_allow_html=True)
             st.markdown(transportadoras[escolha_transp], unsafe_allow_html=True)
 
-    elif escolha_topico == "9. Operações (115-8, 067-3, 163-1)":
+    elif escolha_topico == "10. Operações (115-8, 067-3, 163-1)":
         nomes_ops = list(operacoes.keys())
         escolha_op = st.selectbox("⚙️ Selecione a Operação:", ["" ] + nomes_ops)
 
