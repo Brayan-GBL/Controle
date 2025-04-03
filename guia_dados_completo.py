@@ -86,6 +86,62 @@ conteudo = {
         """
     },
 
+    "5. Devolução com Frete por Conta do Cliente": {
+        "Quando usar?": """
+        - Quando o cliente será o responsável pelo pagamento do frete, conforme contrato ou negociação específica.
+        """,
+        "Procedimentos": """
+        - **Situação 1 (cliente usa transportadora da nossa carteira):**<br>
+            - Não contribuinte: RMA com frete **FOB**.<br>
+            - Contribuinte: RMA com frete **CIF** + anexo da NF emitida.<br>
+            - Abrir SAC "Devolução com frete por conta do cliente".<br>
+            - Informar se o cliente contratará o frete.
+        
+        - **Situação 2 (cliente contrata transportadora própria):**<br>
+            - Se não estiver cadastrada, deixar campo em branco e informar dados completos no SAC.<br>
+            - Tipo de frete: **FOB**.
+        """,
+        "Pontos Importantes": """
+        ✅ Se não contribuinte: logística emite NF.<br>
+        ✅ Se contribuinte: cliente emite NF.<br>
+        ⚠️ Se usar transportadora própria, cliente é responsável pela entrega no operador.
+        """
+    },
+
+    "6. Faturamento Vendas Fora do LNE": {
+        "Quando usar?": """
+        - Quando houve venda direta na escola sem passar pelo sistema Loja na Escola (LNE).
+        """,
+        "Procedimentos": """
+        1. Emitir pedido no SGE (operação 067-3).<br>
+        2. Abrir SAC para Logística Devolução.<br>
+        3. Informar: Nº pedido, tipo de venda (Loja na Escola / Remessa Antecipada), NF remessa.<br>
+        4. Logística emite NF simbólica para ajustar estoque, baixa saldo e fatura manualmente.
+        """,
+        "Pontos Importantes": """
+        ⚠️ Estoque deve refletir exatamente o que está em posse da escola.<br>
+        ✅ Processo é apenas sistêmico, não há devolução física.
+        """
+    },
+
+    "7. Troca de NF para Correção de CNPJ / Desconto": {
+        "Quando usar?": """
+        - Para ajustes de faturamento incorreto (descontos, CNPJ errado, tipo de venda incorreto).<br>
+        - Conhecido como devolução simbólica ou virtual (sem retorno físico).
+        """,
+        "Procedimentos": """
+        1. Emitir RMA com frete "Sem frete".<br>
+        2. Incluir observação: "Devolução simbólica - correção de desconto".<br>
+        3. Abrir SAC: "Troca de NF para correção de desconto/CNPJ".<br>
+        4. Informar nº pedido, RMA, tipo, e nota para crédito.<br>
+        5. Logística fatura manualmente com os dados corretos.
+        """,
+        "Pontos Importantes": """
+        ✅ Utilizar operação sem movimentar estoque (067-3, 177-0, 115-8).<br>
+        📌 Se envolver comercialização antecipada e remessa futura, usar 2 RMAs.
+        """
+    },
+
     "8. Tipos de RMA (Referência Rápida)": {
         "Tabela de Tipos de Nota e RMA": """
         | Tipo de Nota                                      | Tipo de Ordem (RMA)              |
