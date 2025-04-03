@@ -1,145 +1,144 @@
 conteudo = {
     "1. Cancelamento / Recusa de Pedidos": {
         "Quando usar?": """
-        📋 **Cancelamento:** Quando o pedido e a NF ainda podem ser cancelados (prazo ≤ 7 dias, não expedido).
-        O setor de **Gestão de Pedidos** é o responsável por essa validação.
-
-        ❌ **Recusa/Desistência:** Quando o cliente recusa no ato da entrega ou desiste após a expedição.
+        📋 **Cancelamento:** Quando o pedido e a NF ainda podem ser cancelados (prazo ≤ 7 dias, não expedido).<br>
+        O setor de **Gestão de Pedidos** é o responsável por essa validação.<br><br>
+        ❌ **Recusa/Desistência:** Quando o cliente recusa no ato da entrega ou desiste após a expedição.<br>
         O setor de **Transportes** deve ser acionado para retorno da mercadoria.
         """,
         "Procedimentos": """
-        1. Emitir **RMA** no Oracle (sem transportadora e frete \"Sem frete\").
-           - Observação: \"Pedido cancelado\" ou \"Pedido recusado pelo cliente\".
-        2. Abrir **SAC**:
-           - Tipo: Solicitação
-           - Assunto: \"Cancelamento pedido xxx\" ou \"Pedido xxx recusado\"
-           - Informar: Área, Origem, Responsável, Tipo de venda, RMA, NF, Filial.
-        3. Para **LNE/Remessa Antecipada**, não emitir RMA. Abrir SAC normalmente e informar a NF remessa.
-        4. Logística Devolução:
-           - Emite a NF de devolução e notifica pelo CRM.
+        1. Emitir **RMA** no Oracle (sem transportadora e frete \"Sem frete\").<br>
+           - Observação: \"Pedido cancelado\" ou \"Pedido recusado pelo cliente\".<br>
+        2. Abrir **SAC**:<br>
+           - Tipo: Solicitação<br>
+           - Assunto: \"Cancelamento pedido xxx\" ou \"Pedido xxx recusado\"<br>
+           - Informar: Área, Origem, Responsável, Tipo de venda, RMA, NF, Filial.<br>
+        3. Para **LNE/Remessa Antecipada**, não emitir RMA. Abrir SAC normalmente e informar a NF remessa.<br>
+        4. Logística Devolução:<br>
+           - Emite a NF de devolução e notifica pelo CRM.<br>
            - Crédito será usado para abater a NF cancelada/recusada (financeiro).
         """,
         "Pontos Importantes": """
-        ⚠️ Cancelamentos fora do prazo ou pedidos expedidos → Devolução simbólica.
-        ✅ SAC deve estar com todas informações completas para agilidade no processo.
+        ⚠️ Cancelamentos fora do prazo ou pedidos expedidos → Devolução simbólica.<br>
+        ✅ SAC deve estar com todas informações completas para agilidade no processo.<br>
         📌 Sempre checar se a NF original já foi baixada no sistema.
         """
     },
 
     "2. Emissão de NF e Coleta (Não Contribuinte)": {
         "Quando usar?": """
-        - Cliente sem **Inscrição Estadual (IE)**, sem permissão para emitir NF de devolução.
-        - A (PSD) emite **nota de entrada** para retorno ao estoque.
+        - Cliente sem **Inscrição Estadual (IE)**, sem permissão para emitir NF de devolução.<br>
+        - A empresa (PSD) emite **nota de entrada** para retorno ao estoque.
         """,
         "Procedimentos": """
-        1. Emitir **RMA** após verificar elegibilidade da devolução.
-        2. Abrir **SAC** com:
-           - Assunto: \"Solicitação NF e coleta (não contribuinte)\"
-           - Informar: RMA, NF, transportadora, filial, etc.
-        3. Logística Devolução:
-           - Emite NF de entrada e gera o crédito.
+        1. Emitir **RMA** após verificar elegibilidade da devolução.<br>
+        2. Abrir **SAC** com:<br>
+           - Assunto: \"Solicitação NF e coleta (não contribuinte)\"<br>
+           - Informar: RMA, NF, transportadora, filial, etc.<br>
+        3. Logística Devolução:<br>
+           - Emite NF de entrada e gera o crédito.<br>
            - Encaminha ao Transportes para coleta (acompanhamento via TMS).
         """,
         "Pontos Importantes": """
-        📌 NF deve ser enviada ao cliente antes da coleta.
-        📦 Caixas devem estar lacradas, identificadas, com acesso facilitado.
+        📌 NF deve ser enviada ao cliente antes da coleta.<br>
+        📦 Caixas devem estar lacradas, identificadas, com acesso facilitado.<br>
         ⚠️ Coleta cancelada após 2 tentativas frustradas de contato.
         """
     },
 
     "3. Solicitação de Coleta (Contribuinte)": {
         "Quando usar?": """
-        - Cliente com **Inscrição Estadual (IE)**: é o emissor da NF de devolução.
+        - Cliente com **Inscrição Estadual (IE)**: é o emissor da NF de devolução.<br>
         - Utiliza-se CFOP e dados da RMA. Frete normalmente **FOB** (por conta da empresa).
         """,
         "Procedimentos": """
-        1. Emitir **RMA** no Oracle → Gera Autorização de Devolução.
-        2. Cliente emite **NF de devolução** com base na autorização.
-        3. Abrir **SAC**:
-           - Assunto: \"Solicitação NF e coleta contribuinte\"
-           - Anexar PDF da NF emitida.
-        4. Logística Devolução:
+        1. Emitir **RMA** no Oracle → Gera Autorização de Devolução.<br>
+        2. Cliente emite **NF de devolução** com base na autorização.<br>
+        3. Abrir **SAC**:<br>
+           - Assunto: \"Solicitação NF e coleta contribuinte\"<br>
+           - Anexar PDF da NF emitida.<br>
+        4. Logística Devolução:<br>
            - Confere NF, notifica CRM, e envia ao Transportes (TMS).
         """,
         "Pontos Importantes": """
-        ⚠️ NF com mais de 15 dias pode ser recusada.
-        📌 Checar se CFOP e dados da nota estão corretos.
+        ⚠️ NF com mais de 15 dias pode ser recusada.<br>
+        📌 Checar se CFOP e dados da nota estão corretos.<br>
         ✅ Manter dados de contato atualizados para evitar falhas.
         """
     },
 
     "4. Emissão de NF e Coleta LNE": {
         "Quando usar?": """
-        - Para materiais em poder de terceiros (LNE / Remessa Antecipada).
+        - Para materiais em poder de terceiros (LNE / Remessa Antecipada).<br>
         - Quando há sobras não vendidas e é necessário recolher.
         """,
         "Procedimentos": """
-        1. Validar os itens com relatórios do SGE / Oracle.
-        2. Preencher o formulário LNE com todas as informações.
-        3. Abrir SAC: \"Emissão de NF e coleta LNE\" e anexar formulário + NF Remessa.
-        4. Logística Devolução:
+        1. Validar os itens com relatórios do SGE / Oracle.<br>
+        2. Preencher o formulário LNE com todas as informações.<br>
+        3. Abrir SAC: \"Emissão de NF e coleta LNE\" e anexar formulário + NF Remessa.<br>
+        4. Logística Devolução:<br>
            - Emite a NF, baixa saldo de terceiros, avisa CRM e aciona coleta via TMS.
         """,
         "Pontos Importantes": """
-        📦 Caixas lacradas, identificadas e acessíveis.
-        ⚠️ A coleta será cancelada após 2 tentativas sem sucesso.
+        📦 Caixas lacradas, identificadas e acessíveis.<br>
+        ⚠️ A coleta será cancelada após 2 tentativas sem sucesso.<br>
         ✅ Enviar NF ao cliente antes da coleta.
         """
     },
 
     "5. Devolução com Frete por Conta do Cliente": {
         "Quando usar?": """
-        - Cliente arca com o frete (conforme contrato ou exceção).
+        - Cliente arca com o frete (conforme contrato ou exceção).<br>
         - Pode usar transportadora parceira ou própria.
         """,
         "Procedimentos": """
-        1. Emitir RMA:
-           - Não contribuinte: frete FOB
-           - Contribuinte: frete CIF
-        2. Abrir SAC:
-           - Assunto: \"Devolução com frete por conta do cliente\"
+        1. Emitir RMA:<br>
+           - Não contribuinte: frete FOB<br>
+           - Contribuinte: frete CIF<br>
+        2. Abrir SAC:<br>
+           - Assunto: \"Devolução com frete por conta do cliente\"<br>
            - Informar: RMA, tipo, transportadora, se o cliente irá contratar frete, PDF da NF (contribuinte).
         """,
         "Pontos Importantes": """
-        ✅ NF deve ser enviada ao cliente.
-        ⚠️ Cliente com transportadora própria: responsabilidade total pela logística.
+        ✅ NF deve ser enviada ao cliente.<br>
+        ⚠️ Cliente com transportadora própria: responsabilidade total pela logística.<br>
         📦 Caixas conforme NF, lacradas e acessíveis.
         """
     },
 
     "6. Faturamento de Vendas Fora do LNE": {
         "Quando usar?": """
-        - Identificadas vendas fora dos canais oficiais da Loja na Escola.
+        - Identificadas vendas fora dos canais oficiais da Loja na Escola.<br>
         - Ajuste necessário no estoque e faturamento.
         """,
         "Procedimentos": """
-        1. Gerar pedido no SGE com operação 067-3 (sem movimentar estoque).
-        2. Abrir SAC com número do pedido e NF remessa LNE.
+        1. Gerar pedido no SGE com operação 067-3 (sem movimentar estoque).<br>
+        2. Abrir SAC com número do pedido e NF remessa LNE.<br>
         3. Logística emite NF simbólica e fatura o pedido.
         """,
         "Pontos Importantes": """
-        📌 Evita divergência de estoque e cobrança indevida.
+        📌 Evita divergência de estoque e cobrança indevida.<br>
         ✅ Sempre verificar registros de vendas com a escola.
         """
     },
 
     "7. Troca de NF por Correção de CNPJ/Desconto": {
         "Quando usar?": """
-        - Ajustes como:
-            • Correção de valores e descontos
-            • CNPJ incorreto
+        - Ajustes como:<br>
+            • Correção de valores e descontos<br>
+            • CNPJ incorreto<br>
             • Migração de venda (ex: LNE → Direta)
         """,
         "Procedimentos": """
-        1. Emitir RMA simbólica (sem transportadora, "Sem frete").
-        2. Informar observação: \"Devolução simbólica\".
-        3. Abrir SAC:
-           - Assunto: \"Troca de NF para correção de desconto/CNPJ\"
-           - Informar pedido SGE, NF original, tipo de venda, etc.
+        1. Emitir RMA simbólica (sem transportadora, \"Sem frete\").<br>
+        2. Informar observação: \"Devolução simbólica\".<br>
+        3. Abrir SAC:<br>
+           - Assunto: \"Troca de NF para correção de desconto/CNPJ\"<br>
+           - Informar pedido SGE, NF original, tipo de venda, etc.<br>
         4. Logística realiza crédito e emite novo faturamento.
         """,
         "Pontos Importantes": """
-        ⚠️ Faturamento virtual exige itens/quantidades idênticos à nota original.
+        ⚠️ Faturamento virtual exige itens/quantidades idênticos à nota original.<br>
         ✅ Pedido e RMA devem ser processados no mesmo dia.
         """
     }
