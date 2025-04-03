@@ -86,63 +86,26 @@ conteudo = {
         """
     },
 
-    "5. Devolução com Frete por Conta do Cliente": {
-        "Quando usar?": """
-        - Cliente arca com o frete (conforme contrato ou exceção).<br>
-        - Pode usar transportadora parceira ou própria.
+    "8. Tipos de RMA (Referência Rápida)": {
+        "Tabela de Tipos de Nota e RMA": """
+        | Tipo de Nota                                      | Tipo de Ordem (RMA)              |
+        |--------------------------------------------------|----------------------------------|
+        | Remessa bonificação, doação ou brinde            | P15 - RMA DEV BONIF              |
+        | Venda de mercadoria de encomenda futura         | P15 - RMA DEV VDA ENT FUT        |
+        | Devolução de Vendas                              | P15 - RMA DEV VENDA              |
+        | Outras Saídas – Remessas Diversas                | P15 - RMA SAIDAS DIVER C/ ICMS   |
         """,
-        "Procedimentos": """
-        1. Emitir RMA:<br>
-           - Não contribuinte: frete FOB<br>
-           - Contribuinte: frete CIF<br>
-        2. Abrir SAC:<br>
-           - Assunto: \"Devolução com frete por conta do cliente\"<br>
-           - Informar: RMA, tipo, transportadora, se o cliente irá contratar frete, PDF da NF (contribuinte).
-        """,
-        "Pontos Importantes": """
-        ✅ NF deve ser enviada ao cliente.<br>
-        ⚠️ Cliente com transportadora própria: responsabilidade total pela logística.<br>
-        📦 Caixas conforme NF, lacradas e acessíveis.
-        """
-    },
-
-    "6. Faturamento de Vendas Fora do LNE": {
-        "Quando usar?": """
-        - Identificadas vendas fora dos canais oficiais da Loja na Escola.<br>
-        - Ajuste necessário no estoque e faturamento.
-        """,
-        "Procedimentos": """
-        1. Gerar pedido no SGE com operação 067-3 (sem movimentar estoque).<br>
-        2. Abrir SAC com número do pedido e NF remessa LNE.<br>
-        3. Logística emite NF simbólica e fatura o pedido.
-        """,
-        "Pontos Importantes": """
-        📌 Evita divergência de estoque e cobrança indevida.<br>
-        ✅ Sempre verificar registros de vendas com a escola.
-        """
-    },
-
-    "7. Troca de NF por Correção de CNPJ/Desconto": {
-        "Quando usar?": """
-        - Ajustes como:<br>
-            • Correção de valores e descontos<br>
-            • CNPJ incorreto<br>
-            • Migração de venda (ex: LNE → Direta)
-        """,
-        "Procedimentos": """
-        1. Emitir RMA simbólica (sem transportadora, \"Sem frete\").<br>
-        2. Informar observação: \"Devolução simbólica\".<br>
-        3. Abrir SAC:<br>
-           - Assunto: \"Troca de NF para correção de desconto/CNPJ\"<br>
-           - Informar pedido SGE, NF original, tipo de venda, etc.<br>
-        4. Logística realiza crédito e emite novo faturamento.
-        """,
-        "Pontos Importantes": """
-        ⚠️ Faturamento virtual exige itens/quantidades idênticos à nota original.<br>
-        ✅ Pedido e RMA devem ser processados no mesmo dia.
+        "Significado dos Códigos": """
+        - **RMA DEV BONIF** → NF de Remessa bonificação, doação ou brinde<br>
+        - **RMA DEV SIMP FAT ENT FUT** → NF de Simples Faturamento para Entrega Futura<br>
+        - **RMA DEV VDA ENT FUT** → NF de Venda de mercadoria Orig. de Encomenda Futura<br>
+        - **RMA DEV VENDA** → NF de Venda de Mercadoria e/ou recebida de terceiros<br>
+        - **RMA SAIDAS DIVER C/ICMS** → NF de Outras Saídas / Remessas Diversas
         """
     }
 }
+
+# Mantemos as transportadoras e operações como estão abaixo:
 
 transportadoras = {
     "Braspress": """
