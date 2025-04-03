@@ -29,7 +29,7 @@ conteudo = {
     "2. Emissão de NF e Coleta (Não Contribuinte)": {
         "Quando usar?": """
         - Cliente sem **Inscrição Estadual (IE)**, sem permissão para emitir NF de devolução.
-        - A empresa (PSD) emite **nota de entrada** para retorno ao estoque.
+        - A (PSD) emite **nota de entrada** para retorno ao estoque.
         """,
         "Procedimentos": """
         1. Emitir **RMA** após verificar elegibilidade da devolução.
