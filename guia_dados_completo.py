@@ -94,7 +94,7 @@ conteudo = {
         - **Situação 1 (cliente usa transportadora da nossa carteira):**<br>
             - Não contribuinte: RMA com frete **FOB**.<br>
             - Contribuinte: RMA com frete **CIF** + anexo da NF emitida.<br>
-            - Abrir SAC "Devolução com frete por conta do cliente".<br>
+            - Abrir SAC \"Devolução com frete por conta do cliente\".<br>
             - Informar se o cliente contratará o frete.
         
         - **Situação 2 (cliente contrata transportadora própria):**<br>
@@ -130,9 +130,9 @@ conteudo = {
         - Conhecido como devolução simbólica ou virtual (sem retorno físico).
         """,
         "Procedimentos": """
-        1. Emitir RMA com frete "Sem frete".<br>
-        2. Incluir observação: "Devolução simbólica - correção de desconto".<br>
-        3. Abrir SAC: "Troca de NF para correção de desconto/CNPJ".<br>
+        1. Emitir RMA com frete \"Sem frete\".<br>
+        2. Incluir observação: \"Devolução simbólica - correção de desconto\".<br>
+        3. Abrir SAC: \"Troca de NF para correção de desconto/CNPJ\".<br>
         4. Informar nº pedido, RMA, tipo, e nota para crédito.<br>
         5. Logística fatura manualmente com os dados corretos.
         """,
@@ -157,6 +157,29 @@ conteudo = {
         - **RMA DEV VDA ENT FUT** → NF de Venda de mercadoria Orig. de Encomenda Futura<br>
         - **RMA DEV VENDA** → NF de Venda de Mercadoria e/ou recebida de terceiros<br>
         - **RMA SAIDAS DIVER C/ICMS** → NF de Outras Saídas / Remessas Diversas
+        """
+    },
+
+    "10. Dúvidas Frequentes (Fluxo Devolução)": {
+        "Perguntas e Respostas": """
+        1️⃣ **Qual o prazo após a abertura do chamado para emissão de NF e etiqueta?**<br>
+        ⏱️ Até **5 dias úteis** para atender à solicitação.<br><br>
+
+        2️⃣ **Após gerar NF e etiqueta, quem envia para a escola?**<br>
+        ✉️ Retornamos ao **time de atendimento**, que encaminha ao cliente.<br><br>
+
+        3️⃣ **Qual o prazo para coleta após envio da etiqueta?**<br>
+        🚚 **3 a 5 dias úteis** (capitais e regiões metropolitanas)<br>
+        📦 **7 a 10 dias úteis** (interior)<br><br>
+
+        4️⃣ **Quem confere o material no CD? Há SLA?**<br>
+        📥 A **Posigraf** recebe o material e realiza a triagem.<br>
+        ⌛ SLA da gráfica: **10 dias úteis**.<br><br>
+
+        5️⃣ **Como é feito o ajuste no estoque? É a última etapa?**<br>
+        🏷️ A PSD tem **10 dias úteis** após a triagem para realizar a devolução de compra.<br>
+        ✅ Após isso, a Posigraf tem **7 dias úteis** para reintegrar ao estoque.<br>
+        ❌ Itens avariados ou sobras são **descartados**.
         """
     }
 }
