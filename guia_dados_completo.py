@@ -46,140 +46,33 @@ conteudo = {
         """
     },
 
-    "3. Solicitação de Coleta (Contribuinte)": {
-        "Quando usar?": """
-        - Cliente com **Inscrição Estadual (IE)**: é o emissor da NF de devolução.<br>
-        - Utiliza-se CFOP e dados da RMA. Frete normalmente **FOB** (por conta da empresa).
+    "11. Instruções para Emissão de NF-e | Clientes Contribuintes": {
+        "Regras Obrigatórias": """
+        🧾 Todo cliente com **Inscrição Estadual ativa** deve obrigatoriamente emitir NF de devolução.<br><br>
+        - Seguir rigorosamente as informações da **Autorização de Devolução (RMA)**.<br>
+        - A NF deve refletir exatamente os dados da RMA (quantidade, CFOP, valores, descontos etc).<br>
+        - Informar no campo de **Observações** o número da NF de origem.<br>
+        - Enviar a mercadoria acompanhada da NF + RMA, em caixas apropriadas para transporte.
         """,
-        "Procedimentos": """
-        1. Emitir **RMA** no Oracle → Gera Autorização de Devolução.<br>
-        2. Cliente emite **NF de devolução** com base na autorização.<br>
-        3. Abrir **SAC**:<br>
-           - Assunto: \"Solicitação NF e coleta contribuinte\"<br>
-           - Anexar PDF da NF emitida.<br>
-        4. Logística Devolução:<br>
-           - Confere NF, notifica CRM, e envia ao Transportes (TMS).
+        "Correções por Carta de Correção": """
+        ✍️ **Podem ser corrigidos:**<br>
+        - CFOP (desde que não altere natureza de imposto)<br>
+        - CST (sem alteração de valores)<br>
+        - Dados do transportador<br>
+        - Inserções adicionais: número do pedido, caixas, endereço (mesmo estado)<br><br>
+        ❌ **Não podem ser corrigidos:**<br>
+        - Valores fiscais (quantidade, preço)<br>
+        - Mudanças cadastrais que alterem remetente/destinatário<br>
+        - Impostos que alterem o cálculo final
         """,
-        "Pontos Importantes": """
-        ⚠️ NF com mais de 15 dias pode ser recusada.<br>
-        📌 Checar se CFOP e dados da nota estão corretos.<br>
-        ✅ Manter dados de contato atualizados para evitar falhas.
-        """
-    },
-
-    "4. Emissão de NF e Coleta LNE": {
-        "Quando usar?": """
-        - Para materiais em poder de terceiros (LNE / Remessa Antecipada).<br>
-        - Quando há sobras não vendidas e é necessário recolher.
-        """,
-        "Procedimentos": """
-        1. Validar os itens com relatórios do SGE / Oracle.<br>
-        2. Preencher o formulário LNE com todas as informações.<br>
-        3. Abrir SAC: \"Emissão de NF e coleta LNE\" e anexar formulário + NF Remessa.<br>
-        4. Logística Devolução:<br>
-           - Emite a NF, baixa saldo de terceiros, avisa CRM e aciona coleta via TMS.
-        """,
-        "Pontos Importantes": """
-        📦 Caixas lacradas, identificadas e acessíveis.<br>
-        ⚠️ A coleta será cancelada após 2 tentativas sem sucesso.<br>
-        ✅ Enviar NF ao cliente antes da coleta.
-        """
-    },
-
-    "5. Devolução com Frete por Conta do Cliente": {
-        "Quando usar?": """
-        - Quando o cliente será o responsável pelo pagamento do frete, conforme contrato ou negociação específica.
-        """,
-        "Procedimentos": """
-        - **Situação 1 (cliente usa transportadora da nossa carteira):**<br>
-            - Não contribuinte: RMA com frete **FOB**.<br>
-            - Contribuinte: RMA com frete **CIF** + anexo da NF emitida.<br>
-            - Abrir SAC \"Devolução com frete por conta do cliente\".<br>
-            - Informar se o cliente contratará o frete.
-        
-        - **Situação 2 (cliente contrata transportadora própria):**<br>
-            - Se não estiver cadastrada, deixar campo em branco e informar dados completos no SAC.<br>
-            - Tipo de frete: **FOB**.
-        """,
-        "Pontos Importantes": """
-        ✅ Se não contribuinte: logística emite NF.<br>
-        ✅ Se contribuinte: cliente emite NF.<br>
-        ⚠️ Se usar transportadora própria, cliente é responsável pela entrega no operador.
-        """
-    },
-
-    "6. Faturamento Vendas Fora do LNE": {
-        "Quando usar?": """
-        - Quando houve venda direta na escola sem passar pelo sistema Loja na Escola (LNE).
-        """,
-        "Procedimentos": """
-        1. Emitir pedido no SGE (operação 067-3).<br>
-        2. Abrir SAC para Logística Devolução.<br>
-        3. Informar: Nº pedido, tipo de venda (Loja na Escola / Remessa Antecipada), NF remessa.<br>
-        4. Logística emite NF simbólica para ajustar estoque, baixa saldo e fatura manualmente.
-        """,
-        "Pontos Importantes": """
-        ⚠️ Estoque deve refletir exatamente o que está em posse da escola.<br>
-        ✅ Processo é apenas sistêmico, não há devolução física.
-        """
-    },
-
-    "7. Troca de NF para Correção de CNPJ / Desconto": {
-        "Quando usar?": """
-        - Para ajustes de faturamento incorreto (descontos, CNPJ errado, tipo de venda incorreto).<br>
-        - Conhecido como devolução simbólica ou virtual (sem retorno físico).
-        """,
-        "Procedimentos": """
-        1. Emitir RMA com frete \"Sem frete\".<br>
-        2. Incluir observação: \"Devolução simbólica - correção de desconto\".<br>
-        3. Abrir SAC: \"Troca de NF para correção de desconto/CNPJ\".<br>
-        4. Informar nº pedido, RMA, tipo, e nota para crédito.<br>
-        5. Logística fatura manualmente com os dados corretos.
-        """,
-        "Pontos Importantes": """
-        ✅ Utilizar operação sem movimentar estoque (067-3, 177-0, 115-8).<br>
-        📌 Se envolver comercialização antecipada e remessa futura, usar 2 RMAs.
-        """
-    },
-
-    "8. Tipos de RMA (Referência Rápida)": {
-        "Tabela de Tipos de Nota e RMA": """
-        | Tipo de Nota                                      | Tipo de Ordem (RMA)              |
-        |--------------------------------------------------|----------------------------------|
-        | Remessa bonificação, doação ou brinde            | P15 - RMA DEV BONIF              |
-        | Venda de mercadoria de encomenda futura         | P15 - RMA DEV VDA ENT FUT        |
-        | Devolução de Vendas                              | P15 - RMA DEV VENDA              |
-        | Outras Saídas – Remessas Diversas                | P15 - RMA SAIDAS DIVER C/ ICMS   |
-        """,
-        "Significado dos Códigos": """
-        - **RMA DEV BONIF** → NF de Remessa bonificação, doação ou brinde<br>
-        - **RMA DEV SIMP FAT ENT FUT** → NF de Simples Faturamento para Entrega Futura<br>
-        - **RMA DEV VDA ENT FUT** → NF de Venda de mercadoria Orig. de Encomenda Futura<br>
-        - **RMA DEV VENDA** → NF de Venda de Mercadoria e/ou recebida de terceiros<br>
-        - **RMA SAIDAS DIVER C/ICMS** → NF de Outras Saídas / Remessas Diversas
-        """
-    },
-
-    "10. Dúvidas Frequentes (Fluxo Devolução)": {
-        "Perguntas e Respostas": """
-        1️⃣ **Qual o prazo após a abertura do chamado para emissão de NF e etiqueta?**<br>
-        ⏱️ Até **5 dias úteis** para atender à solicitação.<br><br>
-
-        2️⃣ **Após gerar NF e etiqueta, quem envia para a escola?**<br>
-        ✉️ Retornamos ao **time de atendimento**, que encaminha ao cliente.<br><br>
-
-        3️⃣ **Qual o prazo para coleta após envio da etiqueta?**<br>
-        🚚 **3 a 5 dias úteis** (capitais e regiões metropolitanas)<br>
-        📦 **7 a 10 dias úteis** (interior)<br><br>
-
-        4️⃣ **Quem confere o material no CD? Há SLA?**<br>
-        📥 A **Posigraf** recebe o material e realiza a triagem.<br>
-        ⌛ SLA da gráfica: **10 dias úteis**.<br><br>
-
-        5️⃣ **Como é feito o ajuste no estoque? É a última etapa?**<br>
-        🏷️ A PSD tem **10 dias úteis** após a triagem para realizar a devolução de compra.<br>
-        ✅ Após isso, a Posigraf tem **7 dias úteis** para reintegrar ao estoque.<br>
-        ❌ Itens avariados ou sobras são **descartados**.
+        "Notas 623-8 e 624-6": """
+        📌 **Nota 623-8 (Simples Faturamento)**<br>
+        - Não gera coleta<br>
+        - Não inserir dados de transportador<br><br>
+        🚛 **Nota 624-6 (Venda Entrega Futura)**<br>
+        - Gera coleta<br>
+        - Inserir: Razão social, CNPJ, IE, Endereço c/ CEP<br>
+        - Preencher: Quantidade de volumes, tipo (caixas), peso bruto e líquido
         """
     }
 }
