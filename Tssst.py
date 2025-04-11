@@ -6,9 +6,7 @@ from io import BytesIO
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
-# ======================
 # 🚚 Transportadoras
-# ======================
 transportadoras = {
     "BRASPRESS": {
         "razao_social": "BRASPRESS TRANSPORTES URGENTES LTDA",
@@ -52,17 +50,14 @@ transportadoras = {
     }
 }
 
-# ======================
-# 🔎 Funções
-# ======================
+# 🔎 Utilitários
 def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return "\n".join([page.get_text() for page in doc])
 
 def renderizar_primeira_pagina(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        pix = doc[0].get_pixmap(dpi=120)
-        return pix.tobytes("png")
+        return doc[0].get_pixmap(dpi=120).tobytes("png")
 
 def extrair_campo(regex, texto, limpar=None):
     match = re.search(regex, texto)
@@ -75,6 +70,7 @@ def comparar_enderecos_simples(end1, end2):
     limpar = lambda s: re.sub(r'[^a-zA-Z0-9]', '', s or '').lower()
     return limpar(end1) == limpar(end2)
 
+# 🧠 Lógica de verificação
 def analisar_dados(texto_nf, texto_rma):
     resultado = []
 
@@ -121,9 +117,7 @@ def analisar_dados(texto_nf, texto_rma):
 
     return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Está OK?"])
 
-# ======================
-# 🎯 Interface
-# ======================
+# 🖥️ Interface
 st.title("✅ Verificador de Nota Fiscal x RMA")
 
 col1, col2 = st.columns(2)
@@ -133,23 +127,31 @@ with col2:
     rma_file = st.file_uploader("📄 Enviar RMA (PDF)", type=["pdf"], key="rma")
 
 if not nf_file or not rma_file:
-    st.info("👆 Envie os dois arquivos PDF para iniciar a verificação.")
+    st.info("👆 Envie os dois PDFs para iniciar a verificação.")
     st.stop()
 
+# Processamento seguro
 nf_bytes = nf_file.read()
 rma_bytes = rma_file.read()
 
-texto_nf = extrair_texto_pdf(BytesIO(nf_bytes))
-texto_rma = extrair_texto_pdf(BytesIO(rma_bytes))
+try:
+    texto_nf = extrair_texto_pdf(BytesIO(nf_bytes))
+    texto_rma = extrair_texto_pdf(BytesIO(rma_bytes))
+except Exception as e:
+    st.error(f"❌ Erro ao ler os arquivos PDF: {e}")
+    st.stop()
 
+# Comparação
 st.markdown("### 🔍 Comparação dos Dados")
 df_resultado = analisar_dados(texto_nf, texto_rma)
 st.dataframe(df_resultado, use_container_width=True)
 
+# Exportar CSV
 csv = df_resultado.to_csv(index=False).encode('utf-8')
 st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv", mime="text/csv")
 
-with st.expander("🖼️ Visualizar PDFs (clique para abrir)"):
+# Exibir páginas dos PDFs (só a primeira)
+with st.expander("🖼️ Visualizar primeira página dos PDFs"):
     col3, col4 = st.columns(2)
     with col3:
         st.subheader("📑 Nota Fiscal")
