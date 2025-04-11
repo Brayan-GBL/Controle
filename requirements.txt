@@ -8,4 +8,3 @@ matplotlib
 seaborn
 pmdarima
 pymupdf
-difflib
