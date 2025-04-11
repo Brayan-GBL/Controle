@@ -1,8 +1,6 @@
 streamlit
-cohere
 python-docx
 pandas
-openpyxl
 numpy
 statsmodels
 scikit-learn
