@@ -81,8 +81,8 @@ def extrair_campo(regex, texto, limpar=None):
     return valor
 
 def comparar_enderecos(end1, end2):
-    end1 = re.sub(r'[^a-zA-Z0-9]', '', end1).lower()
-    end2 = re.sub(r'[^a-zA-Z0-9]', '', end2).lower()
+    end1 = re.sub(r'[^a-zA-Z0-9]', '', end1 or '').lower()
+    end2 = re.sub(r'[^a-zA-Z0-9]', '', end2 or '').lower()
     return SequenceMatcher(None, end1, end2).ratio() > 0.85
 
 def analisar_dados(texto_nf, texto_rma):
@@ -136,38 +136,46 @@ def analisar_dados(texto_nf, texto_rma):
 # ==============================
 
 st.title("✅ Verificador de Nota Fiscal x RMA")
+
 col1, col2 = st.columns(2)
 
 with col1:
-    nf_file = st.file_uploader("📄 Enviar Nota Fiscal (PDF)", type=["pdf"])
+    nf_file = st.file_uploader("📄 Enviar Nota Fiscal (PDF)", type=["pdf"], key="nf")
 
 with col2:
-    rma_file = st.file_uploader("📄 Enviar RMA (PDF)", type=["pdf"])
+    rma_file = st.file_uploader("📄 Enviar RMA (PDF)", type=["pdf"], key="rma")
 
-if nf_file and rma_file:
-    texto_nf = extrair_texto_pdf(nf_file)
-    nf_file.seek(0)
-    texto_rma = extrair_texto_pdf(rma_file)
-    rma_file.seek(0)
+# 👀 Mostrar aviso até o upload dos dois arquivos
+if not nf_file or not rma_file:
+    st.warning("👆 Envie **ambos os PDFs** para começar a verificação.")
+    st.stop()
 
-    st.markdown("### 🔍 Comparação dos Dados")
-    df_resultado = analisar_dados(texto_nf, texto_rma)
-    st.dataframe(df_resultado, use_container_width=True)
+# 🔍 Processamento
+texto_nf = extrair_texto_pdf(nf_file)
+nf_file.seek(0)
+texto_rma = extrair_texto_pdf(rma_file)
+rma_file.seek(0)
 
-    csv = df_resultado.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv", mime="text/csv")
+st.markdown("### 🔍 Comparação dos Dados")
+df_resultado = analisar_dados(texto_nf, texto_rma)
+st.dataframe(df_resultado, use_container_width=True)
 
-    st.markdown("---")
-    st.markdown("### 🖼️ Visualização dos PDFs")
+# Download CSV
+csv = df_resultado.to_csv(index=False).encode('utf-8')
+st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv", mime="text/csv")
 
-    col3, col4 = st.columns(2)
+# Visualização dos PDFs
+st.markdown("---")
+st.markdown("### 🖼️ Visualização dos PDFs")
 
-    with col3:
-        st.subheader("📑 Nota Fiscal")
-        for img in renderizar_pdf(nf_file):
-            st.image(img, use_column_width=True)
+col3, col4 = st.columns(2)
 
-    with col4:
-        st.subheader("📑 RMA")
-        for img in renderizar_pdf(rma_file):
-            st.image(img, use_column_width=True)
+with col3:
+    st.subheader("📑 Nota Fiscal")
+    for img in renderizar_pdf(nf_file):
+        st.image(img, use_column_width=True)
+
+with col4:
+    st.subheader("📑 RMA")
+    for img in renderizar_pdf(rma_file):
+        st.image(img, use_column_width=True)
