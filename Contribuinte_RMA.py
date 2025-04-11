@@ -1,71 +1,81 @@
-import pandas as pd
 import streamlit as st
-def processar_analise(cobranca_file, triagem_file):
-    # Carregar todas as abas do arquivo
-    cobranca_xl = pd.ExcelFile(cobranca_file)
-    triagem_xl = pd.ExcelFile(triagem_file)
-    # Listar todas as abas disponíveis
-    cobranca_sheets = [s.strip() for s in cobranca_xl.sheet_names]
-    triagem_sheets = [s.strip() for s in triagem_xl.sheet_names]
-    # Tentar encontrar a aba correta ignorando espaços e maiúsculas
-    cobranca_sheet = next((s for s in cobranca_sheets if "devol" in s.lower()), None)
-    triagem_sheet = next((s for s in triagem_sheets if "triagem" in s.lower()), None)
-    if not cobranca_sheet or not triagem_sheet:
-        raise ValueError(f"Abas não encontradas. Disponíveis: {cobranca_sheets} e {triagem_sheets}")
-    # Carregar os dados das abas corretas
-    cobranca_df = cobranca_xl.parse(cobranca_sheet)
-    triagem_df = triagem_xl.parse(triagem_sheet)
-    # Limpar nomes das colunas e remover espaços extras
-    cobranca_df.columns = cobranca_df.columns.str.strip()
-    triagem_df.columns = triagem_df.columns.str.strip().str.upper()
-    # Filtrar apenas linhas com NF e LOCAL preenchidos
-    cobranca_df = cobranca_df.dropna(subset=["NF", "LOCAL"])
-    # Criar chave de concatenação na base Cobrança
-    cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["QTD UND"].astype(str)
-    # Consolidar quantidades físicas (BOA + RUIM) da triagem
-    triagem_consolidado = triagem_df.groupby("NOTA FISCAL").agg({"QTDE FÍSICA (BOM)": "sum", "QTDE FÍSICA (RUIM)": "sum"}).reset_index()
-    triagem_consolidado["CONCAT_DEV"] = triagem_consolidado["QTDE FÍSICA (BOM)"] + triagem_consolidado["QTDE FÍSICA (RUIM)"]
-    # Mesclar os dados
-    resultado_df = cobranca_df.merge(triagem_consolidado, left_on="NF", right_on="NOTA FISCAL", how="left")
-    # Calcular diferença entre quantidades
-    resultado_df["DIFERENÇA"] = resultado_df["CONCAT_DEV"] - resultado_df["QTD UND"]
-    # Criar análise de status
-    def classificar_diferenca(row):
-        if row["CONCAT_DEV"] > row["QTD UND"] and row["CONCAT_DEV"] == row["QTDE FÍSICA (BOM)"] + row["QTDE FÍSICA (RUIM)"]:
-            return "Informação incorreta - Devemos pagar mais"
-        elif row["DIFERENÇA"] > 0 and row["QTDE FÍSICA (BOM)"] + row["QTDE FÍSICA (RUIM)"] < row["QTD UND"]:
-            return "Cobrança indevida - Quantidade menor recebida"
-        elif row["DIFERENÇA"] > 0:
-            return "Sobra cliente"
-        elif row["DIFERENÇA"] < 0:
-            return "Digitou errado" if row["CONCAT_DEV"] > 0 else "Não recebemos nada"
-        else:
-            return "Correto"
-    resultado_df["Observação PSD"] = resultado_df.apply(classificar_diferenca, axis=1)
-    # Calcular valores financeiros
-    valor_unitario = 2.76
-    resultado_df["Valor Unitário"] = valor_unitario
-    resultado_df["Total Nota"] = resultado_df["QTD UND"] * valor_unitario
-    resultado_df["Total Cobrança"] = resultado_df["DIFERENÇA"] * valor_unitario
-    return resultado_df[["NF", "CLIENTE", "QTD UND", "LOCAL", "CONCAT_DEV", "DIFERENÇA", "Observação PSD", "Valor Unitário", "Total Nota", "Total Cobrança"]]
-# Interface no Streamlit
-st.title("FATURA POSIGRAF")
-cobranca_file = st.file_uploader("Upload do arquivo COBRANÇA POSIGRAF", type=["xlsx"])
-triagem_file = st.file_uploader("Upload do arquivo CONFERÊNCIA TRIAGEM", type=["xlsx"])
-if cobranca_file and triagem_file:
-    try:
-        df_resultado = processar_analise(cobranca_file, triagem_file)
-        st.write("### Resultados da Análise:")
-        st.dataframe(df_resultado)
-        # Baixar relatório consolidado
-        nome_saida = "analise_cobranca_triagem.xlsx"
-        df_resultado.to_excel(nome_saida, index=False)
-        with open(nome_saida, "rb") as file:
-            st.download_button(
-                label="Baixar Relatório Consolidado",
-                data=file,
-                file_name=nome_saida,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-    except (ValueError, KeyError) as e:
-        st.error(f"Erro: {str(e)}. Verifique se os arquivos contêm as abas e colunas corretas.")
+
+# ----------------- CSS (Firulas) ------------------
+st.markdown("""
+<style>
+.main {
+    background-color: #FAFAFA;
+}
+.big-title {
+    font-size: 2.0em;
+    color: #D35400;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    text-align: center;
+}
+.highlight-box {
+    background: #FFF7E6;
+    border-left: 5px solid #FFA500;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 1em 0;
+    font-size:1.05em;
+}
+.my-subtitle {
+    font-size:1.15em;
+    font-weight: bold;
+    margin-top: 1em;
+    color: #2C3E50;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ----------------- Título e introdução ------------------
+st.markdown("<div class='big-title'>Guia Completo de Devolução e Procedimentos</div>", unsafe_allow_html=True)
+st.markdown("""
+<div class='highlight-box'>
+Bem-vindo(a)! Aqui você encontra as principais regras, procedimentos e instruções 
+relacionadas às devoluções, cancelamentos, coletas, faturamento, operações e mais.
+</div>
+""", unsafe_allow_html=True)
+
+# ===================== CARREGAMENTO DOS DADOS =====================
+from guia_dados_completo import conteudo, transportadoras, operacoes
+
+# ===================== LÓGICA DE SELEÇÃO =====================
+topicos_principais = list(conteudo.keys()) + ["Transportadoras", "Operações (115-8, 067-3, 163-1)"]
+escolha_topico = st.selectbox("📌 Selecione o tópico principal:", ["" ] + topicos_principais)
+
+if escolha_topico:
+
+    if escolha_topico in conteudo:
+        subitens = list(conteudo[escolha_topico].keys())
+        escolha_sub = st.selectbox("\U0001F4DD Selecione a seção específica:", ["" ] + subitens)
+
+        if escolha_sub:
+            texto = conteudo[escolha_topico].get(escolha_sub)
+            if texto:
+                st.markdown(f"<div class='my-subtitle'>{escolha_sub}</div>", unsafe_allow_html=True)
+                st.markdown(texto, unsafe_allow_html=True)
+            else:
+                st.warning("Este subitem não possui texto definido.")
+
+    elif escolha_topico == "Transportadoras":
+        nomes = list(transportadoras.keys())
+        escolha_transp = st.selectbox("🚚 Selecione a Transportadora:", ["" ] + nomes)
+
+        if escolha_transp:
+            st.markdown(f"<div class='my-subtitle'>{escolha_transp}</div>", unsafe_allow_html=True)
+            st.markdown(transportadoras[escolha_transp], unsafe_allow_html=True)
+
+    elif escolha_topico == "Operações (115-8, 067-3, 163-1)":
+        nomes_ops = list(operacoes.keys())
+        escolha_op = st.selectbox("⚙️ Selecione a Operação:", ["" ] + nomes_ops)
+
+        if escolha_op:
+            st.markdown(f"<div class='my-subtitle'>{escolha_op}</div>", unsafe_allow_html=True)
+            st.markdown(operacoes[escolha_op], unsafe_allow_html=True)
+
+# ------------- RODAPÉ -------------
+st.write("---")
+st.info("Dúvidas adicionais? Contate o setor responsável ou consulte a documentação interna.")
