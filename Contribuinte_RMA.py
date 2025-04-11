@@ -7,9 +7,9 @@ from io import BytesIO
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
-# ==============================
-# 🚚 Dados das transportadoras
-# ==============================
+# ======================
+# 🚚 Transportadoras
+# ======================
 transportadoras = {
     "BRASPRESS": {
         "razao_social": "BRASPRESS TRANSPORTES URGENTES LTDA",
@@ -53,32 +53,24 @@ transportadoras = {
     }
 }
 
-# ==============================
+# ======================
 # 🔎 Funções auxiliares
-# ==============================
+# ======================
+def extrair_texto_pdf(file_bytes):
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+        return "\n".join([page.get_text() for page in doc])
 
-def extrair_texto_pdf(uploaded_file):
-    with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
-        texto = "\n".join([page.get_text() for page in doc])
-    return texto
-
-def renderizar_pdf(uploaded_file):
-    imagens = []
-    with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
-        for page in doc:
-            pix = page.get_pixmap(dpi=150)
-            img_bytes = pix.tobytes("png")
-            imagens.append(img_bytes)
-    return imagens
+def renderizar_uma_pagina(file_bytes):
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+        pix = doc[0].get_pixmap(dpi=120)
+        return pix.tobytes("png")
 
 def extrair_campo(regex, texto, limpar=None):
     match = re.search(regex, texto)
     if not match:
         return None
     valor = match.group(1).strip()
-    if limpar:
-        valor = re.sub(limpar, '', valor)
-    return valor
+    return re.sub(limpar, '', valor) if limpar else valor
 
 def comparar_enderecos(end1, end2):
     end1 = re.sub(r'[^a-zA-Z0-9]', '', end1 or '').lower()
@@ -131,51 +123,39 @@ def analisar_dados(texto_nf, texto_rma):
 
     return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Está OK?"])
 
-# ==============================
-# 🎯 Interface Streamlit
-# ==============================
-
+# ======================
+# 🎯 Interface
+# ======================
 st.title("✅ Verificador de Nota Fiscal x RMA")
 
 col1, col2 = st.columns(2)
-
 with col1:
     nf_file = st.file_uploader("📄 Enviar Nota Fiscal (PDF)", type=["pdf"], key="nf")
-
 with col2:
     rma_file = st.file_uploader("📄 Enviar RMA (PDF)", type=["pdf"], key="rma")
 
-# 👀 Mostrar aviso até o upload dos dois arquivos
 if not nf_file or not rma_file:
-    st.warning("👆 Envie **ambos os PDFs** para começar a verificação.")
+    st.info("👆 Envie os dois arquivos PDF para iniciar a verificação.")
     st.stop()
 
-# 🔍 Processamento
-texto_nf = extrair_texto_pdf(nf_file)
-nf_file.seek(0)
-texto_rma = extrair_texto_pdf(rma_file)
-rma_file.seek(0)
+nf_bytes = nf_file.read()
+rma_bytes = rma_file.read()
+
+texto_nf = extrair_texto_pdf(BytesIO(nf_bytes))
+texto_rma = extrair_texto_pdf(BytesIO(rma_bytes))
 
 st.markdown("### 🔍 Comparação dos Dados")
 df_resultado = analisar_dados(texto_nf, texto_rma)
 st.dataframe(df_resultado, use_container_width=True)
 
-# Download CSV
 csv = df_resultado.to_csv(index=False).encode('utf-8')
 st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv", mime="text/csv")
 
-# Visualização dos PDFs
-st.markdown("---")
-st.markdown("### 🖼️ Visualização dos PDFs")
-
-col3, col4 = st.columns(2)
-
-with col3:
-    st.subheader("📑 Nota Fiscal")
-    for img in renderizar_pdf(nf_file):
-        st.image(img, use_column_width=True)
-
-with col4:
-    st.subheader("📑 RMA")
-    for img in renderizar_pdf(rma_file):
-        st.image(img, use_column_width=True)
+with st.expander("📑 Visualizar PDFs (clique para abrir)", expanded=False):
+    col3, col4 = st.columns(2)
+    with col3:
+        st.subheader("NF")
+        st.image(renderizar_uma_pagina(BytesIO(nf_bytes)), use_column_width=True)
+    with col4:
+        st.subheader("RMA")
+        st.image(renderizar_uma_pagina(BytesIO(rma_bytes)), use_column_width=True)
