@@ -2,7 +2,6 @@ import streamlit as st
 import fitz  # PyMuPDF
 import pandas as pd
 import re
-from difflib import SequenceMatcher
 from io import BytesIO
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
@@ -54,13 +53,13 @@ transportadoras = {
 }
 
 # ======================
-# 🔎 Funções auxiliares
+# 🔎 Funções
 # ======================
 def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return "\n".join([page.get_text() for page in doc])
 
-def renderizar_uma_pagina(file_bytes):
+def renderizar_primeira_pagina(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         pix = doc[0].get_pixmap(dpi=120)
         return pix.tobytes("png")
@@ -72,10 +71,9 @@ def extrair_campo(regex, texto, limpar=None):
     valor = match.group(1).strip()
     return re.sub(limpar, '', valor) if limpar else valor
 
-def comparar_enderecos(end1, end2):
-    end1 = re.sub(r'[^a-zA-Z0-9]', '', end1 or '').lower()
-    end2 = re.sub(r'[^a-zA-Z0-9]', '', end2 or '').lower()
-    return SequenceMatcher(None, end1, end2).ratio() > 0.85
+def comparar_enderecos_simples(end1, end2):
+    limpar = lambda s: re.sub(r'[^a-zA-Z0-9]', '', s or '').lower()
+    return limpar(end1) == limpar(end2)
 
 def analisar_dados(texto_nf, texto_rma):
     resultado = []
@@ -86,7 +84,7 @@ def analisar_dados(texto_nf, texto_rma):
 
     endereco_nf = extrair_campo(r'LIVRARIA.*?\n(.*?)\n', texto_nf)
     endereco_rma = extrair_campo(r'Endereço:\s*(.*?)\s+CEP', texto_rma)
-    resultado.append(("Endereço Cliente", endereco_nf, endereco_rma, comparar_enderecos(endereco_nf, endereco_rma)))
+    resultado.append(("Endereço Cliente", endereco_nf, endereco_rma, comparar_enderecos_simples(endereco_nf, endereco_rma)))
 
     volume_nf = extrair_campo(r'QUANTIDADE\s*\n(\d+)', texto_nf)
     volume_rma = extrair_campo(r'Volume:\s*(\d+)', texto_rma)
@@ -151,11 +149,11 @@ st.dataframe(df_resultado, use_container_width=True)
 csv = df_resultado.to_csv(index=False).encode('utf-8')
 st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv", mime="text/csv")
 
-with st.expander("📑 Visualizar PDFs (clique para abrir)", expanded=False):
+with st.expander("🖼️ Visualizar PDFs (clique para abrir)"):
     col3, col4 = st.columns(2)
     with col3:
-        st.subheader("NF")
-        st.image(renderizar_uma_pagina(BytesIO(nf_bytes)), use_column_width=True)
+        st.subheader("📑 Nota Fiscal")
+        st.image(renderizar_primeira_pagina(BytesIO(nf_bytes)), use_column_width=True)
     with col4:
-        st.subheader("RMA")
-        st.image(renderizar_uma_pagina(BytesIO(rma_bytes)), use_column_width=True)
+        st.subheader("📑 RMA")
+        st.image(renderizar_primeira_pagina(BytesIO(rma_bytes)), use_column_width=True)
