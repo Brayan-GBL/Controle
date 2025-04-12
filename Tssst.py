@@ -9,6 +9,14 @@ st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
 # 🚚 Transportadoras
 transportadoras = {
+    "LOCAL EXPRESS": {
+        "razao_social": "LOCAL EXPRESS TRANSPORTES E LOGISTICA",
+        "cnpj": "06199523000195",
+        "ie": "9030307558",
+        "endereco": "RUA FORMOSA 131 PLANTA PORTAL DA SERRA",
+        "cidade": "PINHAIS",
+        "uf": "PR"
+    },
     "BRASPRESS": {
         "razao_social": "BRASPRESS TRANSPORTES URGENTES LTDA",
         "cnpj": "48740351000327",
@@ -32,15 +40,7 @@ transportadoras = {
         "endereco": "RODOVIA BR 116, 22301 – TATUQUARA",
         "cidade": "CURITIBA",
         "uf": "PR"
-    },
-    "LOCAL EXPRESS": {
-        "razao_social": "LOCAL EXPRESS TRANSPORTES E LOGISTICA",
-        "cnpj": "06199523000195",
-        "ie": "9030307558",
-        "endereco": "R FORMOSA, 131 – PLANTA PORTAL DA SERRA",
-        "cidade": "PINHAIS",
-        "uf": "PR"
-    },
+    }, 
     "RODONAVES": {
         "razao_social": "RODONAVES TRANSPORTES E ENCOMENDAS LTDA",
         "cnpj": "44914992001703",
@@ -51,7 +51,7 @@ transportadoras = {
     }
 }
 
-# 📦 Utilitários
+# 🔎 Utilitários
 def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return "\n".join([page.get_text() for page in doc])
@@ -77,37 +77,38 @@ def frete_equivalente(valor_nf):
         return False
     return any(x in valor_nf.upper() for x in ['FOB', 'DEST', 'REMET', 'REMETENTE', 'DESTINATÁRIO'])
 
-# 🧠 Análise
+# 🧠 Lógica de verificação
 def analisar_dados(texto_nf, texto_rma):
     resultado = []
 
-    # CLIENTE (nome e endereço no topo da NF)
-    nome_cliente_nf = extrair_campo(r'^\s*(.*?)\nAV ', texto_nf, flags=re.MULTILINE)
-    endereco_cliente_nf = extrair_campo(r'(AV .*?)\n', texto_nf)
-    nome_cliente_rma = extrair_campo(r'Nome/Razão\s*Social:\s*(.*?)\n', texto_rma)
-    endereco_cliente_rma = extrair_campo(r'Endereço:\s*(.*?)\s+CEP', texto_rma)
-    nome_ok = similaridade(nome_cliente_nf, nome_cliente_rma) > 0.85
-    endereco_ok = similaridade(endereco_cliente_nf, endereco_cliente_rma) > 0.85
-    resultado.append(("Nome Cliente", nome_cliente_nf, nome_cliente_rma, nome_ok))
-    resultado.append(("Endereço Cliente", endereco_cliente_nf, endereco_cliente_rma, endereco_ok))
+    # Nome e endereço do cliente real (topo da NF)
+    nome_nf = extrair_campo(r'^\s*(.*?)\nAV ', texto_nf, flags=re.MULTILINE)
+    endereco_nf = extrair_campo(r'(AV .*)\n', texto_nf)
+    nome_rma = extrair_campo(r'Nome/Raz[aã]o\s*Social:\s*(.*?)\n', texto_rma)
+    endereco_rma = extrair_campo(r'Endere[cç]o:\s*(.*?)\s+CEP', texto_rma)
 
-    # CNPJ
+    resultado.append(("Nome Cliente", nome_nf, nome_rma, similaridade(nome_nf, nome_rma) > 0.85))
+    resultado.append(("Endereço Cliente", endereco_nf, endereco_rma, similaridade(endereco_nf, endereco_rma) > 0.85))
+
+    # CNPJ Cliente (logo abaixo do nome no topo)
     cnpj_nf = extrair_campo(r'CNPJ.*?(\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2})', texto_nf)
-    cnpj_rma = extrair_campo(r'CPF/CNPJ\s*[:\s]*([\d./-]+)', texto_rma, r'\D')
-    resultado.append(("CNPJ Cliente", cnpj_nf, cnpj_rma, cnpj_nf and cnpj_nf.replace(".", "").replace("-", "").replace("/", "") in cnpj_rma.replace(".", "").replace("-", "").replace("/", "")))
+    cnpj_rma = extrair_campo(r'CPF/CNPJ\s*[:\s]*([\d./-]+)', texto_rma)
+    cnpj_nf_fmt = re.sub(r'\D', '', cnpj_nf or "")
+    cnpj_rma_fmt = re.sub(r'\D', '', cnpj_rma or "")
+    resultado.append(("CNPJ Cliente", cnpj_nf, cnpj_rma, cnpj_nf_fmt == cnpj_rma_fmt))
 
-    # Volume
-    volume_nf = extrair_campo(r'QUANTIDADE\s*\n(\d+)', texto_nf)
-    volume_rma = extrair_campo(r'Volume:\s*(\d+)', texto_rma)
-    resultado.append(("Quantidade de Caixas", volume_nf, volume_rma, volume_nf == volume_rma))
+    # Quantidade
+    qtd_nf = extrair_campo(r'QUANTIDADE\s*[:\n]?\s*(\d+)', texto_nf, flags=re.IGNORECASE)
+    qtd_rma = extrair_campo(r'Volume:\s*(\d+)', texto_rma)
+    resultado.append(("Quantidade de Caixas", qtd_nf, qtd_rma, qtd_nf == qtd_rma))
 
     # Peso
-    peso_nf = extrair_campo(r'PESO L[IÍ]QUIDO\s*\n([\d.,]+)', texto_nf)
+    peso_nf = extrair_campo(r'PESO L[IÍ]QUIDO\s*[:\n]?\s*([\d.,]+)', texto_nf, flags=re.IGNORECASE)
     peso_rma = extrair_campo(r'Peso:\s*([\d.,]+)', texto_rma)
     resultado.append(("Peso", peso_nf, peso_rma, peso_nf == peso_rma))
 
     # Frete
-    frete_nf = extrair_campo(r'FRETE POR CONTA\s*:\s*(.*?)\n', texto_nf)
+    frete_nf = extrair_campo(r'FRETE POR CONTA\s*[:\n]?\s*(.*?)\n', texto_nf, flags=re.IGNORECASE)
     frete_rma = extrair_campo(r'Frete:\s*(\w+)', texto_rma)
     frete_ok = 'FOB' in (frete_rma or '').upper() and frete_equivalente(frete_nf)
     resultado.append(("Tipo de Frete", frete_nf, frete_rma, frete_ok))
@@ -115,11 +116,10 @@ def analisar_dados(texto_nf, texto_rma):
     # CFOP
     cfop_nf = extrair_campo(r'\b(5202|6202|6949)\b', texto_nf)
     cfop_rma = extrair_campo(r'CFOP:\s*(\d+)', texto_rma)
-    cfop_ok = cfop_nf == cfop_rma and cfop_nf in ['5202', '6202', '6949']
-    resultado.append(("CFOP", cfop_nf, cfop_rma, cfop_ok))
+    resultado.append(("CFOP", cfop_nf, cfop_rma, cfop_nf == cfop_rma))
 
     # Valor total
-    valor_nf = extrair_campo(r'VALOR TOTAL DA NOTA\s*\n([\d.,]+)', texto_nf)
+    valor_nf = extrair_campo(r'VALOR TOTAL DA NOTA\s*\n([\d.,]+)', texto_nf, flags=re.IGNORECASE)
     valor_rma = extrair_campo(r'Tot\. Liquido\(R\$.*?\):\s*([\d.,]+)', texto_rma)
     try:
         nf = float(valor_nf.replace(',', '.'))
@@ -130,7 +130,7 @@ def analisar_dados(texto_nf, texto_rma):
     resultado.append(("Valor Total", valor_nf, valor_rma, valor_ok))
 
     # Transportadora
-    nome_transp_nf = extrair_campo(r'TRANSPORTADOR / VOLUMES TRANSPORTADOS\s*\n(.*?)\n', texto_nf)
+    nome_transp_nf = extrair_campo(r'RAZ[AÃ]O SOCIAL\s*\n(.*?)\n', texto_nf, flags=re.IGNORECASE)
     nome_transp_rma = extrair_campo(r'Transportadora:\s*(.*?)(\s|$)', texto_rma)
     dados_ok = False
     if nome_transp_rma in transportadoras:
@@ -147,7 +147,7 @@ def analisar_dados(texto_nf, texto_rma):
 
     return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Está OK?"])
 
-# 🎯 Interface
+# 🖥️ Interface
 st.title("✅ Verificador de Nota Fiscal x RMA")
 
 col1, col2 = st.columns(2)
@@ -160,7 +160,6 @@ if not nf_file or not rma_file:
     st.info("👆 Envie os dois PDFs para iniciar.")
     st.stop()
 
-# Processamento
 nf_bytes = nf_file.read()
 rma_bytes = rma_file.read()
 
@@ -177,11 +176,11 @@ df = analisar_dados(texto_nf, texto_rma)
 df["Status"] = df["Está OK?"].apply(lambda x: "✅" if x else "❌")
 st.dataframe(df[["Campo", "Valor NF", "Valor RMA", "Status"]], use_container_width=True)
 
-# CSV
+# Baixar CSV
 csv = df.to_csv(index=False).encode("utf-8")
 st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv")
 
-# Visualização
+# Visualizar PDFs
 with st.expander("🖼️ Visualizar primeira página dos PDFs"):
     col3, col4 = st.columns(2)
     with col3:
