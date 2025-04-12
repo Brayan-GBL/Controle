@@ -83,48 +83,24 @@ def extrair_valor_total_rma(texto):
     match_alt = re.search(r"TOTAL\s*[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})", texto, re.IGNORECASE)
     return match_alt.group(1) if match_alt else None
 
-def analisar_dados(nf, rma_texto):
-    extrair = lambda p: buscar_regex(rma_texto, p)
-    rma = {
-        "nome_cliente": extrair(r'Nome/Raz[aã]o\s*Social:\s*(.*?)\n'),
-        "endereco_cliente": extrair(r'Endere[cç]o:\s*(.*?)\s+CEP'),
-        "cnpj_cliente": extrair(r'CPF/CNPJ\s*[:\s]*([\d./-]+)'),
-        "quantidade_caixas": extrair(r'Volume:\s*(\d+)'),
-        "peso": extrair(r'Peso:\s*([\d.,]+)'),
-        "frete": extrair(r'Frete:\s*(\w+)'),
-        "cfop": extrair(r'CFOP:\s*(\d+)'),
-        "valor_total": extrair_valor_total_rma(rma_texto),
-        "transportadora_razao": extrair(r'Transportadora:\s*(.*?)(\s|$)')
+def extrair_campos_nf(texto_nf):
+    campos = {
+        "nome_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z ]{5,}(?=\n)"),
+        "endereco_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z].*\d{3,}.*(?=\n)"),
+        "cnpj_cliente": buscar_regex(texto_nf, r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"),
+        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*\n(\d+)"),
+        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*\n([\d.,]+)"),
+        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*\n(.*?)\n"),
+        "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
+        "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s*\n([\d.,]+)"),
+        "transportadora_razao": buscar_regex(texto_nf, r"TRANSPORTADOR / VOLUMES TRANSPORTADOS\s*\n(.*?)\n") or "",
+        "transportadora_cnpj": buscar_regex(texto_nf, r"\n(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\n"),
+        "transportadora_ie": buscar_regex(texto_nf, r"INSCRIÇÃO ESTADUAL\s*\n(\d{8,})"),
+        "transportadora_endereco": buscar_regex(texto_nf, r"ENDEREÇO\s*\n(.*?)\n"),
+        "transportadora_cidade": buscar_regex(texto_nf, r"MUNIC[IÍ]PIO\s*\n(.*?)\n"),
+        "transportadora_uf": buscar_regex(texto_nf, r"UF\s*\n(\w{2})")
     }
-
-    resultado = []
-    for campo, val_nf in nf.items():
-        if campo not in rma:
-            continue
-        val_rma = rma[campo]
-        if campo == "valor_total":
-            try:
-                ok = abs(float(val_nf.replace(',', '.')) - float(val_rma.replace(',', '.'))) <= 0.99
-            except:
-                ok = False
-        else:
-            ok = similaridade(val_nf or '', val_rma or '') > 0.85
-        resultado.append((campo.replace('_', ' ').title(), val_nf, val_rma, ok))
-
-    nome_rma = rma.get("transportadora_razao")
-    transp_ok = False
-    if nome_rma in transportadoras:
-        d = transportadoras[nome_rma]
-        transp_ok = all([
-            d["razao_social"].lower() in nf.get("transportadora_razao", '').lower(),
-            d["cnpj"] in (nf.get("transportadora_cnpj") or ''),
-            d["ie"] in (nf.get("transportadora_ie") or ''),
-            d["endereco"].lower() in (nf.get("transportadora_endereco") or '').lower(),
-            d["cidade"].lower() in (nf.get("transportadora_cidade") or '').lower(),
-            d["uf"].lower() in (nf.get("transportadora_uf") or '').lower()
-        ])
-    resultado.append(("Transportadora", nf.get("transportadora_razao"), nome_rma, transp_ok))
-    return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Status"])
+    return campos
 
 # =========================== INTERFACE ================================
 st.title("✅ Verificador de Nota Fiscal x RMA")
