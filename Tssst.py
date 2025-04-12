@@ -62,7 +62,11 @@ def renderizar_primeira_pagina(file_bytes):
 
 def buscar_regex_global(texto, padrao):
     match = re.search(padrao, texto, flags=re.IGNORECASE)
-    return match.group(1).strip() if match else None
+    if not match:
+        return None
+    if match.lastindex:  # verifica se há grupo de captura
+        return match.group(1).strip()
+    return match.group(0).strip()  # retorna o match completo
 
 def similaridade(a, b):
     a = re.sub(r'[^a-zA-Z0-9]', '', a or '').lower()
