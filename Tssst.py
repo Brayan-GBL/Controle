@@ -60,6 +60,10 @@ def extrair_texto_com_pypdf2(file_bytes):
         texto += page.extract_text() + "\n"
     return texto
 
+def extrair_texto_pdf(file_bytes):
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+        return "\n".join([page.get_text() for page in doc])
+
 def limpar_texto(texto):
     return re.sub(r'\s+', ' ', texto or '').strip()
 
