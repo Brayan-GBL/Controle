@@ -10,3 +10,5 @@ pmdarima
 pymupdf
 PyPDF2
 lxml
+requests
+Pillow
