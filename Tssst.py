@@ -153,6 +153,11 @@ with col3:
 
 chave_manual = st.text_input("🔑 Caso não tenha o XML, cole a chave de acesso (44 dígitos)")
 
+if st.button("🔍 Buscar NF pela Chave"):
+    if chave_manual:
+        st.warning("⚠️ Integração com SEFAZ em desenvolvimento...")
+        st.stop()
+
 if rma_file:
     rma_bytes = rma_file.read()
     texto_rma = extrair_texto_pdf(rma_bytes)
@@ -165,11 +170,8 @@ if rma_file:
         texto_nf = extrair_texto_com_pypdf2(nf_bytes)
         dados_nf = extrair_campos_nf(texto_nf)
         origem = "PDF"
-    elif chave_manual:
-        st.warning("⚠️ Integração com SEFAZ em desenvolvimento...")
-        st.stop()
     else:
-        st.info("👆 Envie a NF, XML ou chave de acesso.")
+        st.info("👆 Envie a NF, XML ou use a chave de acesso.")
         st.stop()
 
     def analisar_dados(nf, rma_texto):
