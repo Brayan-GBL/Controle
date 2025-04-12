@@ -140,6 +140,32 @@ def extrair_dados_xml(xml_file):
         "transportadora_uf": transp.findtext('nfe:UF', default='', namespaces=ns),
     }
 
+import requests
+import base64
+from PIL import Image
+from lxml import html
+
+# ======================== CAPTCHA SEFAZ =============================
+def consultar_nfe_publica(chave):
+    session = requests.Session()
+    url = 'https://www.nfe.fazenda.gov.br/portal/consulta.aspx?tipoConsulta=completa'
+    response = session.get(url)
+    tree = html.fromstring(response.content)
+    img_data = tree.xpath('//img[@id="ContentPlaceHolder1_imgCaptcha"]/@src')
+
+    if img_data:
+        img_base64 = img_data[0].split(',')[-1]
+        image_bytes = base64.b64decode(img_base64)
+        image = Image.open(BytesIO(image_bytes))
+        st.image(image, caption="Digite o código da imagem (CAPTCHA)")
+        captcha = st.text_input("🔐 Código CAPTCHA", key="captcha")
+        if captcha:
+            st.info("📡 Enviando dados para SEFAZ...")
+            st.warning("🚧 Integração com consulta pública ainda em desenvolvimento.")
+    else:
+        st.error("❌ Não foi possível carregar o captcha da SEFAZ.")
+
+
 # =========================== INTERFACE ================================
 st.title("✅ Verificador de Nota Fiscal x RMA")
 
@@ -153,10 +179,9 @@ with col3:
 
 chave_manual = st.text_input("🔑 Caso não tenha o XML, cole a chave de acesso (44 dígitos)")
 
-if st.button("🔍 Buscar NF pela Chave"):
-    if chave_manual:
-        st.warning("⚠️ Integração com SEFAZ em desenvolvimento...")
-        st.stop()
+if st.button("🔍 Buscar NF pela Chave") and chave_manual:
+    consultar_nfe_publica(chave_manual)
+    st.stop()
 
 if rma_file:
     rma_bytes = rma_file.read()
