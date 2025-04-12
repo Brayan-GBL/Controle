@@ -61,6 +61,24 @@ def extrair_texto_com_pypdf2(file_bytes):
         texto += page.extract_text() + "\n"
     return texto
 
+def extrair_campos_nf(texto_nf):
+    return {
+        "nome_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z ]{5,}(?=\n)"),
+        "cnpj_cliente": buscar_regex(texto_nf, r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"),
+        "endereco_cliente": buscar_regex(texto_nf, r"AV.*?UVARANAS.*"),
+        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*(\d+)"),
+        "peso": buscar_regex(texto_nf, r"PESO (?:BRUTO|L[IÍ]QUIDO)\s*([\d.,]+)"),
+        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*\n(.*?)\n"),
+        "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
+        "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s*[\n:]\s*([\d.,]+)"),
+        "transportadora_razao": buscar_regex(texto_nf, r"RAZ[AÃ]O SOCIAL\s*\n(.*?)\n"),
+        "transportadora_cnpj": buscar_regex(texto_nf, r"\n(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\n"),
+        "transportadora_ie": buscar_regex(texto_nf, r"INSCRI[ÇC][ÃA]O ESTADUAL\s*\n(\d{8,})"),
+        "transportadora_endereco": buscar_regex(texto_nf, r"ENDERE[ÇC]O\s*\n(.*?)\n"),
+        "transportadora_cidade": buscar_regex(texto_nf, r"MUNIC[IÍ]PIO\s*\n(.*?)\n"),
+        "transportadora_uf": buscar_regex(texto_nf, r"UF\s*\n(\w{2})")
+    }
+
 def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return "\n".join([page.get_text() for page in doc])
@@ -133,6 +151,8 @@ with col2:
 with col3:
     xml_file = st.file_uploader("🧾 Enviar XML da NF-e", type=["xml"])
 
+chave_manual = st.text_input("🔑 Caso não tenha o XML, cole a chave de acesso (44 dígitos)")
+
 if rma_file:
     rma_bytes = rma_file.read()
     texto_rma = extrair_texto_pdf(rma_bytes)
@@ -145,13 +165,13 @@ if rma_file:
         texto_nf = extrair_texto_com_pypdf2(nf_bytes)
         dados_nf = extrair_campos_nf(texto_nf)
         origem = "PDF"
+    elif chave_manual:
+        st.warning("⚠️ Integração com SEFAZ em desenvolvimento...")
+        st.stop()
     else:
-        chave_manual = st.text_input("🔑 Cole a chave de acesso (44 dígitos) caso não tenha o XML")
-        if chave_manual:
-            st.warning("⚠️ Integração com SEFAZ em desenvolvimento...")
+        st.info("👆 Envie a NF, XML ou chave de acesso.")
         st.stop()
 
-    from collections import namedtuple
     def analisar_dados(nf, rma_texto):
         def extrair(p): return buscar_regex(rma_texto, p)
         rma = {
