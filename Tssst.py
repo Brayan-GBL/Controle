@@ -5,7 +5,6 @@ import re
 from io import BytesIO
 from difflib import SequenceMatcher
 from PIL import Image, ImageDraw
-import tempfile
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
@@ -39,7 +38,7 @@ transportadoras = {
         "razao_social": "LOCAL EXPRESS TRANSPORTES E LOGISTICA",
         "cnpj": "06199523000195",
         "ie": "9030307558",
-        "endereco": "RUA FORMOSA, 131 – PLANTA PORTAL DA SERRA",
+        "endereco": "R FORMOSA, 131 – PLANTA PORTAL DA SERRA",
         "cidade": "PINHAIS",
         "uf": "PR"
     },
@@ -60,7 +59,8 @@ def extrair_texto_pdf(file_bytes):
 
 def renderizar_primeira_pagina(file_bytes, destaques=None):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        pix = doc[0].get_pixmap(dpi=150)
+        page = doc[0]
+        pix = page.get_pixmap(dpi=150)
         img = Image.open(BytesIO(pix.tobytes("png")))
         if destaques:
             draw = ImageDraw.Draw(img)
@@ -99,12 +99,12 @@ def extrair_valor_total_rma(texto):
 
 def extrair_campos_nf(texto_nf):
     return {
-        "nome_cliente": buscar_regex(texto_nf, r"NOME/RAZ[\u00c3A]O SOCIAL\s*(.*?)\s+(?:Documento|CNPJ)"),
-        "endereco_cliente": buscar_regex(texto_nf, r"ENDERE[\u00c7C]O\s+(.*?)\s+BAIRRO"),
+        "nome_cliente": buscar_regex(texto_nf, r"ESCOLA.*"),
+        "endereco_cliente": buscar_regex(texto_nf, r"AV\s+GAL\s+CARLOS\s+CAVALCANTI.*"),
         "cnpj_cliente": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
         "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*:?[\s\n]+(\d+)"),
         "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*:?[\s\n]+([\d.,]+)"),
-        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*:?\s*(.*?)\s"),
+        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*:?(.*?)\s"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
         "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s+([\d.,]+)"),
         "transportadora_razao": buscar_regex(texto_nf, r"RAZ[\u00c3A]O SOCIAL\s+(.*?)\s+ENDERE\u00c7O"),
