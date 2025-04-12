@@ -96,7 +96,7 @@ def extrair_campos_nf(texto_nf):
         "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*\n(.*?)\n"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
         "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s*\n([\d.,]+)"),
-        "transportadora_razao": buscar_regex(texto_nf, r"TRANSPORTADOR / VOLUMES TRANSPORTADOS\s*\n(.*?)\n"),
+        "transportadora_razao": buscar_regex(texto_nf, r"RAZÃO SOCIAL\s*\n(.*?)\n"),
         "transportadora_cnpj": buscar_regex(texto_nf, r"\n(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\n"),
         "transportadora_ie": buscar_regex(texto_nf, r"INSCRIÇÃO ESTADUAL\s*\n(\d{8,})"),
         "transportadora_endereco": buscar_regex(texto_nf, r"ENDEREÇO\s*\n(.*?)\n"),
