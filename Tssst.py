@@ -79,163 +79,37 @@ def extrair_campos_nf(texto_nf):
         "transportadora_uf": buscar_regex(texto_nf, r"UF\s*\n(\w{2})")
     }
 
-def extrair_texto_pdf(file_bytes):
-    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        return "\n".join([page.get_text() for page in doc])
-
-def renderizar_primeira_pagina(file_bytes):
-    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        return doc[0].get_pixmap(dpi=120).tobytes("png")
-
-def limpar_texto(texto):
-    return re.sub(r'\s+', ' ', texto or '').strip()
-
-def similaridade(a, b):
-    a = limpar_texto(a).lower()
-    b = limpar_texto(b).lower()
-    return SequenceMatcher(None, a, b).ratio()
-
-def buscar_regex(texto, padrao):
-    match = re.search(padrao, texto, flags=re.IGNORECASE)
-    if not match:
-        return None
-    if match.lastindex:
-        return match.group(1).strip()
-    return match.group(0).strip()
-
-def extrair_valor_total_rma(texto):
-    match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, re.IGNORECASE)
-    if match:
-        return match.group(1)
-    match_alt = re.search(r"TOTAL GERAL\s*([\d.,]+)", texto, re.IGNORECASE)
-    if match_alt:
-        return match_alt.group(1)
-    match_final = re.search(r"TOTAL\s*[:\s]+([\d.,]+)", texto, re.IGNORECASE)
-    return match_final.group(1) if match_final else None
-
 def extrair_dados_xml(xml_file):
-    tree = ET.parse(xml_file)
-    root = tree.getroot()
-    ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
+    try:
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+    except ET.ParseError:
+        st.error("❌ Arquivo XML inválido. Verifique o conteúdo.")
+        st.stop()
+
+    ns = {}
+    for elem in root.iter():
+        if '}' in elem.tag:
+            ns['nfe'] = elem.tag.split('}')[0].strip('{')
+            break
 
     dest = root.find('.//nfe:dest', ns)
     vol = root.find('.//nfe:vol', ns)
     transp = root.find('.//nfe:transporta', ns)
-    infNFe = root.find('.//nfe:infNFe', ns)
 
     return {
-        "nome_cliente": dest.findtext('nfe:xNome', default='', namespaces=ns),
-        "cnpj_cliente": dest.findtext('nfe:CNPJ', default='', namespaces=ns),
-        "endereco_cliente": dest.find('.//nfe:enderDest/nfe:xLgr', ns).text + ", " + dest.find('.//nfe:enderDest/nfe:nro', ns).text,
-        "quantidade_caixas": vol.findtext('nfe:qVol', default='', namespaces=ns),
-        "peso": vol.findtext('nfe:pesoL', default='', namespaces=ns),
+        "nome_cliente": dest.findtext('nfe:xNome', default='', namespaces=ns) if dest is not None else '',
+        "cnpj_cliente": dest.findtext('nfe:CNPJ', default='', namespaces=ns) if dest is not None else '',
+        "endereco_cliente": f"{dest.findtext('nfe:enderDest/nfe:xLgr', default='', namespaces=ns)}, {dest.findtext('nfe:enderDest/nfe:nro', default='', namespaces=ns)}" if dest is not None else '',
+        "quantidade_caixas": vol.findtext('nfe:qVol', default='', namespaces=ns) if vol is not None else '',
+        "peso": vol.findtext('nfe:pesoL', default='', namespaces=ns) if vol is not None else '',
         "frete": root.findtext('.//nfe:modFrete', default='', namespaces=ns),
         "cfop": root.findtext('.//nfe:CFOP', default='', namespaces=ns),
         "valor_total": root.findtext('.//nfe:vNF', default='', namespaces=ns),
-        "transportadora_razao": transp.findtext('nfe:xNome', default='', namespaces=ns),
-        "transportadora_cnpj": transp.findtext('nfe:CNPJ', default='', namespaces=ns),
-        "transportadora_ie": transp.findtext('nfe:IE', default='', namespaces=ns),
-        "transportadora_endereco": transp.findtext('nfe:xEnder', default='', namespaces=ns),
-        "transportadora_cidade": transp.findtext('nfe:xMun', default='', namespaces=ns),
-        "transportadora_uf": transp.findtext('nfe:UF', default='', namespaces=ns),
+        "transportadora_razao": transp.findtext('nfe:xNome', default='', namespaces=ns) if transp is not None else '',
+        "transportadora_cnpj": transp.findtext('nfe:CNPJ', default='', namespaces=ns) if transp is not None else '',
+        "transportadora_ie": transp.findtext('nfe:IE', default='', namespaces=ns) if transp is not None else '',
+        "transportadora_endereco": transp.findtext('nfe:xEnder', default='', namespaces=ns) if transp is not None else '',
+        "transportadora_cidade": transp.findtext('nfe:xMun', default='', namespaces=ns) if transp is not None else '',
+        "transportadora_uf": transp.findtext('nfe:UF', default='', namespaces=ns) if transp is not None else '',
     }
-
-# =========================== INTERFACE ================================
-st.title("✅ Verificador de Nota Fiscal x RMA")
-
-col1, col2, col3 = st.columns(3)
-with col1:
-    nf_file = st.file_uploader("📄 Enviar Nota Fiscal (PDF)", type=["pdf"])
-with col2:
-    rma_file = st.file_uploader("📄 Enviar RMA (PDF)", type=["pdf"])
-with col3:
-    xml_file = st.file_uploader("🧾 Enviar XML da NF-e", type=["xml"])
-
-chave_manual = st.text_input("🔑 Caso não tenha o XML, cole a chave de acesso (44 dígitos)")
-
-if st.button("🔍 Buscar NF pela Chave"):
-    if chave_manual:
-        st.warning("⚠️ Integração com SEFAZ em desenvolvimento...")
-        st.stop()
-
-if rma_file:
-    rma_bytes = rma_file.read()
-    texto_rma = extrair_texto_pdf(rma_bytes)
-
-    if xml_file:
-        dados_nf = extrair_dados_xml(xml_file)
-        origem = "XML"
-    elif nf_file:
-        nf_bytes = nf_file.read()
-        texto_nf = extrair_texto_com_pypdf2(nf_bytes)
-        dados_nf = extrair_campos_nf(texto_nf)
-        origem = "PDF"
-    else:
-        st.info("👆 Envie a NF, XML ou use a chave de acesso.")
-        st.stop()
-
-    def analisar_dados(nf, rma_texto):
-        def extrair(p): return buscar_regex(rma_texto, p)
-        rma = {
-            "nome_cliente": extrair(r'Nome/Raz[aã]o\s*Social:\s*(.*?)\n'),
-            "endereco_cliente": extrair(r'Endere[cç]o:\s*(.*?)\s+CEP'),
-            "cnpj_cliente": extrair(r'CPF/CNPJ\s*[:\s]*([\d./-]+)'),
-            "quantidade_caixas": extrair(r'Volume:\s*(\d+)'),
-            "peso": extrair(r'Peso:\s*([\d.,]+)'),
-            "frete": extrair(r'Frete:\s*(\w+)'),
-            "cfop": extrair(r'CFOP:\s*(\d+)'),
-            "valor_total": extrair_valor_total_rma(rma_texto),
-            "transportadora_razao": extrair(r'Transportadora:\s*(.*?)(\s|$)')
-        }
-
-        resultado = []
-        for campo, val_nf in nf.items():
-            if campo not in rma:
-                continue
-            val_rma = rma[campo]
-            if campo == "valor_total":
-                try:
-                    ok = abs(float(val_nf.replace(',', '.')) - float(val_rma.replace(',', '.'))) <= 0.99
-                except:
-                    ok = False
-            else:
-                ok = similaridade(val_nf or '', val_rma or '') > 0.85
-            resultado.append((campo.replace('_', ' ').title(), val_nf, val_rma, ok))
-
-        nome_rma = rma.get("transportadora_razao")
-        transp_ok = False
-        if nome_rma and nome_rma in transportadoras:
-            d = transportadoras[nome_rma]
-            transp_ok = all([
-                d["razao_social"].lower() in (nf.get("transportadora_razao") or '').lower(),
-                d["cnpj"] in (nf.get("transportadora_cnpj") or ''),
-                d["ie"] in (nf.get("transportadora_ie") or ''),
-                d["endereco"].lower() in (nf.get("transportadora_endereco") or '').lower(),
-                d["cidade"].lower() in (nf.get("transportadora_cidade") or '').lower(),
-                d["uf"].lower() in (nf.get("transportadora_uf") or '').lower()
-            ])
-        resultado.append(("Transportadora", nf.get("transportadora_razao"), nome_rma, transp_ok))
-        return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Status"])
-
-    df_result = analisar_dados(dados_nf, texto_rma)
-    df_result["Status"] = df_result["Status"].apply(lambda x: "✅" if x else "❌")
-
-    st.markdown(f"### 📋 Comparação dos Dados (Origem da NF: {origem})")
-    st.dataframe(df_result, use_container_width=True)
-
-    csv = df_result.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv")
-
-    with st.expander("🖼️ Visualizar PDFs"):
-        colA, colB = st.columns(2)
-        with colA:
-            st.subheader("📑 Nota Fiscal")
-            if nf_file:
-                st.image(renderizar_primeira_pagina(BytesIO(nf_bytes)), use_column_width=True)
-            else:
-                st.info("NF não enviada.")
-        with colB:
-            st.subheader("📑 RMA")
-            st.image(renderizar_primeira_pagina(BytesIO(rma_bytes)), use_column_width=True)
-else:
-    st.info("👆 Envie ao menos a RMA para iniciar a verificação.")
