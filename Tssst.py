@@ -147,13 +147,14 @@ from lxml import html
 
 # ======================== CAPTCHA SEFAZ =============================
 def consultar_nfe_publica(chave):
+    import re
     session = requests.Session()
     url = 'https://www.nfe.fazenda.gov.br/portal/consulta.aspx?tipoConsulta=completa'
     response = session.get(url)
-    tree = html.fromstring(response.content)
-    img_data = tree.xpath('//img[@id="ContentPlaceHolder1_imgCaptcha"]/@src')
+    html_content = response.text
+    base64_match = re.search(r'data:image/png;base64,([^"']+)', html_content)
 
-    if img_data:
+    if base64_match:
         img_base64 = img_data[0].split(',')[-1]
         image_bytes = base64.b64decode(img_base64)
         image = Image.open(BytesIO(image_bytes))
