@@ -77,29 +77,29 @@ def buscar_regex(texto, padrao):
     return match.group(0).strip()
 
 def extrair_valor_total_rma(texto):
-    match = re.search(r"Tot\\.\\s*Liquido\(R\\$.*?\):\\s*([\\d.,]+)", texto, re.IGNORECASE)
+    match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, re.IGNORECASE)
     if match:
         return match.group(1)
-    match_alt = re.search(r"TOTAL GERAL\\s*([\\d.,]+)", texto, re.IGNORECASE)
+    match_alt = re.search(r"TOTAL GERAL\s*([\d.,]+)", texto, re.IGNORECASE)
     if match_alt:
         return match_alt.group(1)
-    match_final = re.search(r"TOTAL\\s*[:\\s]+([\\d.,]+)", texto, re.IGNORECASE)
+    match_final = re.search(r"TOTAL\s*[:\s]+([\d.,]+)", texto, re.IGNORECASE)
     return match_final.group(1) if match_final else None
 
 def extrair_campos_nf(texto_nf):
     return {
-        "nome_cliente": buscar_regex(texto_nf, r"DESTINAT[ÁA]RIO.*?NOME/RAZ[ÃA]O SOCIAL\s*(.*?)\s+Documento"),
-        "endereco_cliente": buscar_regex(texto_nf, r"ENDERE[ÇC]O\s+(.*?)\s+BAIRRO"),
+        "nome_cliente": buscar_regex(texto_nf, r"NOME/RAZ[\u00c3A]O SOCIAL\s*(.*?)\s+(?:Documento|CNPJ)"),
+        "endereco_cliente": buscar_regex(texto_nf, r"ENDERE[\u00c7C]O\s+(.*?)\s+BAIRRO"),
         "cnpj_cliente": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
         "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s+(\d+)"),
         "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s+([\d.,]+)"),
-        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s+([^-\n]+)"),
+        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s+(.*?)\s"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
         "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s+([\d.,]+)"),
-        "transportadora_razao": buscar_regex(texto_nf, r"RAZ[ÃA]O SOCIAL\s+(.*?)\s+ENDEREÇO"),
+        "transportadora_razao": buscar_regex(texto_nf, r"RAZ[\u00c3A]O SOCIAL\s+(.*?)\s+ENDERE\u00c7O"),
         "transportadora_cnpj": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
-        "transportadora_ie": buscar_regex(texto_nf, r"INSCRIÇÃO ESTADUAL\s+(\d{8,})"),
-        "transportadora_endereco": buscar_regex(texto_nf, r"ENDERE[ÇC]O\s+(.*?)\s+MUNIC[IÍ]PIO"),
+        "transportadora_ie": buscar_regex(texto_nf, r"INSCRI[\u00c7C][\u00c3A]O ESTADUAL\s+(\d{8,})"),
+        "transportadora_endereco": buscar_regex(texto_nf, r"ENDERE[\u00c7C]O\s+(.*?)\s+MUNIC[IÍ]PIO"),
         "transportadora_cidade": buscar_regex(texto_nf, r"MUNIC[IÍ]PIO\s+(.*?)\s+UF"),
         "transportadora_uf": buscar_regex(texto_nf, r"UF\s+(PR|SC|RS|SP|MG|RJ|ES|BA|CE|PE|AM)")
     }
