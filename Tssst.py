@@ -1,10 +1,10 @@
 import streamlit as st
 import fitz  # PyMuPDF
+import PyPDF2
 import pandas as pd
 import re
 from io import BytesIO
 from difflib import SequenceMatcher
-from PIL import Image, ImageDraw
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
@@ -38,7 +38,7 @@ transportadoras = {
         "razao_social": "LOCAL EXPRESS TRANSPORTES E LOGISTICA",
         "cnpj": "06199523000195",
         "ie": "9030307558",
-        "endereco": "R FORMOSA, 131 – PLANTA PORTAL DA SERRA",
+        "endereco": "RUA FORMOSA, 131 – PLANTA PORTAL DA SERRA",
         "cidade": "PINHAIS",
         "uf": "PR"
     },
@@ -53,23 +53,12 @@ transportadoras = {
 }
 
 # ====================== FUNÇÕES AUXILIARES =======================
-def extrair_texto_pdf(file_bytes):
-    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        return "\n".join([page.get_text("text") for page in doc])
-
-def renderizar_primeira_pagina(file_bytes, destaques=None):
-    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        page = doc[0]
-        pix = page.get_pixmap(dpi=150)
-        img = Image.open(BytesIO(pix.tobytes("png")))
-        if destaques:
-            draw = ImageDraw.Draw(img)
-            for campo, cor, bbox in destaques:
-                draw.rectangle(bbox, outline=cor, width=4)
-                draw.text((bbox[0] + 2, bbox[1] - 15), campo, fill=cor)
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        return buf.getvalue()
+def extrair_texto_com_pypdf2(file_bytes):
+    reader = PyPDF2.PdfReader(BytesIO(file_bytes))
+    texto = ""
+    for page in reader.pages:
+        texto += page.extract_text() + "\n"
+    return texto
 
 def limpar_texto(texto):
     return re.sub(r'\s+', ' ', texto or '').strip()
@@ -102,9 +91,9 @@ def extrair_campos_nf(texto_nf):
         "nome_cliente": buscar_regex(texto_nf, r"ESCOLA.*"),
         "endereco_cliente": buscar_regex(texto_nf, r"AV\s+GAL\s+CARLOS\s+CAVALCANTI.*"),
         "cnpj_cliente": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
-        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*:?[\s\n]+(\d+)"),
-        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*:?[\s\n]+([\d.,]+)"),
-        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*:?(.*?)\s"),
+        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*:?\s*(\d+)"),
+        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*:?\s*([\d.,]+)"),
+        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*:?\s*(.*?)\s"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
         "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s+([\d.,]+)"),
         "transportadora_razao": buscar_regex(texto_nf, r"RAZ[\u00c3A]O SOCIAL\s+(.*?)\s+ENDERE\u00c7O"),
@@ -129,7 +118,6 @@ def analisar_dados(nf, rma_texto):
         "transportadora_razao": extrair(r'Transportadora:\s*(.*?)(\s|$)')
     }
 
-    destaques = []
     resultado = []
     for campo, val_nf in nf.items():
         if campo not in rma:
@@ -143,8 +131,6 @@ def analisar_dados(nf, rma_texto):
         else:
             ok = similaridade(val_nf or '', val_rma or '') > 0.85
         resultado.append((campo.replace('_', ' ').title(), val_nf, val_rma, ok))
-        if not ok:
-            destaques.append((campo.replace('_', ' ').title(), "red", (20, 20 + 25 * len(destaques), 600, 40 + 25 * len(destaques))))
 
     nome_rma = rma.get("transportadora_razao")
     transp_ok = False
@@ -159,9 +145,7 @@ def analisar_dados(nf, rma_texto):
             d["uf"].lower() in (nf.get("transportadora_uf") or '').lower()
         ])
     resultado.append(("Transportadora", nf.get("transportadora_razao"), nome_rma, transp_ok))
-    if not transp_ok:
-        destaques.append(("Transportadora", "red", (20, 20 + 25 * len(destaques), 600, 40 + 25 * len(destaques))))
-    return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Status"]), destaques
+    return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Status"])
 
 # =========================== INTERFACE ================================
 st.title("✅ Verificador de Nota Fiscal x RMA")
@@ -174,11 +158,11 @@ with col2:
 if nf_file and rma_file:
     nf_bytes = nf_file.read()
     rma_bytes = rma_file.read()
-    texto_nf = extrair_texto_pdf(nf_bytes)
+    texto_nf = extrair_texto_com_pypdf2(nf_bytes)
     texto_rma = extrair_texto_pdf(rma_bytes)
 
     dados_nf = extrair_campos_nf(texto_nf)
-    resultado_df, destaques = analisar_dados(dados_nf, texto_rma)
+    resultado_df = analisar_dados(dados_nf, texto_rma)
     resultado_df["Status"] = resultado_df["Status"].apply(lambda x: "✅" if x else "❌")
 
     st.markdown("### 🔍 Comparação dos Dados")
@@ -186,14 +170,5 @@ if nf_file and rma_file:
 
     csv = resultado_df.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv")
-
-    with st.expander("🖼️ Visualizar primeira página dos PDFs"):
-        col3, col4 = st.columns(2)
-        with col3:
-            st.subheader("📑 Nota Fiscal")
-            st.image(renderizar_primeira_pagina(BytesIO(nf_bytes), destaques), use_container_width=True)
-        with col4:
-            st.subheader("📑 RMA")
-            st.image(renderizar_primeira_pagina(BytesIO(rma_bytes)), use_container_width=True)
 else:
     st.info("👆 Envie os dois PDFs para iniciar a verificação.")
