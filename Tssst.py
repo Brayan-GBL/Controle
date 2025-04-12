@@ -76,47 +76,12 @@ def buscar_regex(texto, padrao):
         return match.group(1).strip()
     return match.group(0).strip()
 
-def extrair_campos_nf(texto_nf):
-    campos = dict.fromkeys([
-        "nome_cliente", "endereco_cliente", "cnpj_cliente",
-        "quantidade_caixas", "peso", "frete", "cfop", "valor_total",
-        "transportadora_razao", "transportadora_cnpj", "transportadora_ie",
-        "transportadora_endereco", "transportadora_cidade", "transportadora_uf"
-    ])
-
-    bloco_cliente = texto_nf.split("NATUREZA DA OPERAÇÃO")[0] if "NATUREZA DA OPERAÇÃO" in texto_nf else texto_nf
-    linhas_cliente = bloco_cliente.splitlines()
-    if len(linhas_cliente) >= 2:
-        campos["nome_cliente"] = limpar_texto(linhas_cliente[0])
-        campos["endereco_cliente"] = limpar_texto(linhas_cliente[1])
-
-    campos["cnpj_cliente"] = buscar_regex(texto_nf, r'CPF.?CNPJ\s*[:\s]*([\d./-]+)')
-    campos["quantidade_caixas"] = buscar_regex(texto_nf, r'QUANTIDADE\s*[:\s]*([\d]+)')
-    campos["peso"] = buscar_regex(texto_nf, r'PESO\s+L[IÍ]QUIDO\s*[:\s]*([\d.,]+)')
-    campos["frete"] = buscar_regex(texto_nf, r'FRETE POR CONTA\s*[:\s]*([A-Z -]+)')
-    campos["cfop"] = buscar_regex(texto_nf, r'\b(5202|6202|6949)\b')
-    campos["valor_total"] = buscar_regex(texto_nf, r'VALOR TOTAL DA NOTA\s*[:\s]*([\d.,]+)')
-
-    bloco_transp = re.search(r'TRANSPORTADOR / VOLUMES TRANSPORTADOS(.*?)DADOS DO PRODUTO', texto_nf, re.DOTALL)
-    if bloco_transp:
-        for linha in bloco_transp.group(1).splitlines():
-            if not campos["transportadora_razao"] and re.search(r'[A-Z]{3,}', linha):
-                campos["transportadora_razao"] = limpar_texto(linha)
-            if not campos["transportadora_cnpj"]:
-                cnpj = re.search(r'\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}', linha)
-                if cnpj:
-                    campos["transportadora_cnpj"] = cnpj.group()
-            if not campos["transportadora_ie"]:
-                ie = re.search(r'\b\d{8,}\b', linha)
-                if ie:
-                    campos["transportadora_ie"] = ie.group()
-            if not campos["transportadora_endereco"] and re.search(r'\d{3,}.*[-–]', linha):
-                campos["transportadora_endereco"] = limpar_texto(linha)
-            if not campos["transportadora_cidade"] and re.search(r' [A-Z]{2}\s*$', linha):
-                campos["transportadora_uf"] = linha.strip()[-2:]
-                campos["transportadora_cidade"] = limpar_texto(linha.replace(campos["transportadora_uf"], '').strip())
-
-    return campos
+def extrair_valor_total_rma(texto):
+    match = re.search(r"TOTAL GERAL\s*(\d{1,3}(?:\.\d{3})*,\d{2})", texto, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    match_alt = re.search(r"TOTAL\s*[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})", texto, re.IGNORECASE)
+    return match_alt.group(1) if match_alt else None
 
 def analisar_dados(nf, rma_texto):
     extrair = lambda p: buscar_regex(rma_texto, p)
@@ -128,7 +93,7 @@ def analisar_dados(nf, rma_texto):
         "peso": extrair(r'Peso:\s*([\d.,]+)'),
         "frete": extrair(r'Frete:\s*(\w+)'),
         "cfop": extrair(r'CFOP:\s*(\d+)'),
-        "valor_total": extrair(r'Tot\\. Liquido\\(R\\$.*?\\):\\s*([\d.,]+)'),
+        "valor_total": extrair_valor_total_rma(rma_texto),
         "transportadora_razao": extrair(r'Transportadora:\s*(.*?)(\s|$)')
     }
 
