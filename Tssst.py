@@ -60,8 +60,8 @@ def renderizar_primeira_pagina(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return doc[0].get_pixmap(dpi=120).tobytes("png")
 
-def extrair_campo(regex, texto, limpar=None):
-    match = re.search(regex, texto)
+def extrair_campo(regex, texto, limpar=None, flags=0):
+    match = re.search(regex, texto, flags)
     if not match:
         return None
     valor = match.group(1).strip()
@@ -77,20 +77,24 @@ def frete_equivalente(valor_nf):
         return False
     return any(x in valor_nf.upper() for x in ['FOB', 'DEST', 'REMET', 'REMETENTE', 'DESTINATÁRIO'])
 
-# 🧠 Lógica de verificação
+# 🧠 Análise
 def analisar_dados(texto_nf, texto_rma):
     resultado = []
 
-    # CNPJ
-    cnpj_nf = extrair_campo(r'CNPJ/CPF\s*[:\s]*([\d./-]+)', texto_nf, r'\D')
-    cnpj_rma = extrair_campo(r'CPF/CNPJ\s*[:\s]*([\d./-]+)', texto_rma, r'\D')
-    resultado.append(("CNPJ Cliente", cnpj_nf, cnpj_rma, cnpj_nf == cnpj_rma))
+    # CLIENTE (nome e endereço no topo da NF)
+    nome_cliente_nf = extrair_campo(r'^\s*(.*?)\nAV ', texto_nf, flags=re.MULTILINE)
+    endereco_cliente_nf = extrair_campo(r'(AV .*?)\n', texto_nf)
+    nome_cliente_rma = extrair_campo(r'Nome/Razão\s*Social:\s*(.*?)\n', texto_rma)
+    endereco_cliente_rma = extrair_campo(r'Endereço:\s*(.*?)\s+CEP', texto_rma)
+    nome_ok = similaridade(nome_cliente_nf, nome_cliente_rma) > 0.85
+    endereco_ok = similaridade(endereco_cliente_nf, endereco_cliente_rma) > 0.85
+    resultado.append(("Nome Cliente", nome_cliente_nf, nome_cliente_rma, nome_ok))
+    resultado.append(("Endereço Cliente", endereco_cliente_nf, endereco_cliente_rma, endereco_ok))
 
-    # Endereço do cliente
-    endereco_nf = extrair_campo(r'LIVRARIA.*?\n(.*?)\n', texto_nf)
-    endereco_rma = extrair_campo(r'Endereço:\s*(.*?)\s+CEP', texto_rma)
-    endereco_ok = similaridade(endereco_nf, endereco_rma) > 0.85
-    resultado.append(("Endereço Cliente", endereco_nf, endereco_rma, endereco_ok))
+    # CNPJ
+    cnpj_nf = extrair_campo(r'CNPJ.*?(\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2})', texto_nf)
+    cnpj_rma = extrair_campo(r'CPF/CNPJ\s*[:\s]*([\d./-]+)', texto_rma, r'\D')
+    resultado.append(("CNPJ Cliente", cnpj_nf, cnpj_rma, cnpj_nf and cnpj_nf.replace(".", "").replace("-", "").replace("/", "") in cnpj_rma.replace(".", "").replace("-", "").replace("/", "")))
 
     # Volume
     volume_nf = extrair_campo(r'QUANTIDADE\s*\n(\d+)', texto_nf)
@@ -98,20 +102,20 @@ def analisar_dados(texto_nf, texto_rma):
     resultado.append(("Quantidade de Caixas", volume_nf, volume_rma, volume_nf == volume_rma))
 
     # Peso
-    peso_nf = extrair_campo(r'PESO LÍQUIDO\s*\n([\d.,]+)', texto_nf)
+    peso_nf = extrair_campo(r'PESO L[IÍ]QUIDO\s*\n([\d.,]+)', texto_nf)
     peso_rma = extrair_campo(r'Peso:\s*([\d.,]+)', texto_rma)
     resultado.append(("Peso", peso_nf, peso_rma, peso_nf == peso_rma))
 
-    # Tipo de Frete
-    frete_nf = extrair_campo(r'FRETE POR CONTA\s*\n(.*?)\n', texto_nf)
+    # Frete
+    frete_nf = extrair_campo(r'FRETE POR CONTA\s*:\s*(.*?)\n', texto_nf)
     frete_rma = extrair_campo(r'Frete:\s*(\w+)', texto_rma)
     frete_ok = 'FOB' in (frete_rma or '').upper() and frete_equivalente(frete_nf)
     resultado.append(("Tipo de Frete", frete_nf, frete_rma, frete_ok))
 
     # CFOP
-    cfop_nf = extrair_campo(r'\n(5202|6202|6949)\n', texto_nf)
+    cfop_nf = extrair_campo(r'\b(5202|6202|6949)\b', texto_nf)
     cfop_rma = extrair_campo(r'CFOP:\s*(\d+)', texto_rma)
-    cfop_ok = cfop_nf in ['5202', '6202', '6949']
+    cfop_ok = cfop_nf == cfop_rma and cfop_nf in ['5202', '6202', '6949']
     resultado.append(("CFOP", cfop_nf, cfop_rma, cfop_ok))
 
     # Valor total
@@ -128,13 +132,12 @@ def analisar_dados(texto_nf, texto_rma):
     # Transportadora
     nome_transp_nf = extrair_campo(r'TRANSPORTADOR / VOLUMES TRANSPORTADOS\s*\n(.*?)\n', texto_nf)
     nome_transp_rma = extrair_campo(r'Transportadora:\s*(.*?)(\s|$)', texto_rma)
-
     dados_ok = False
     if nome_transp_rma in transportadoras:
         dados = transportadoras[nome_transp_rma]
         dados_ok = all([
             dados["razao_social"].lower() in texto_nf.lower(),
-            dados["cnpj"].lower().replace(".", "").replace("-", "").replace("/", "") in texto_nf.replace(".", "").replace("-", "").replace("/", ""),
+            dados["cnpj"].replace(".", "").replace("-", "").replace("/", "") in texto_nf.replace(".", "").replace("-", "").replace("/", ""),
             dados["ie"] in texto_nf,
             dados["endereco"].lower() in texto_nf.lower(),
             dados["cidade"].lower() in texto_nf.lower(),
@@ -157,7 +160,7 @@ if not nf_file or not rma_file:
     st.info("👆 Envie os dois PDFs para iniciar.")
     st.stop()
 
-# Processamento seguro
+# Processamento
 nf_bytes = nf_file.read()
 rma_bytes = rma_file.read()
 
@@ -168,21 +171,17 @@ except Exception as e:
     st.error(f"❌ Erro ao ler os PDFs: {e}")
     st.stop()
 
-# Análise
+# Resultado
 st.markdown("### 🔍 Comparação dos Dados")
 df = analisar_dados(texto_nf, texto_rma)
-
-def destacar(val):
-    return '✅' if val else '❌'
-
-df["Status"] = df["Está OK?"].apply(destacar)
+df["Status"] = df["Está OK?"].apply(lambda x: "✅" if x else "❌")
 st.dataframe(df[["Campo", "Valor NF", "Valor RMA", "Status"]], use_container_width=True)
 
 # CSV
 csv = df.to_csv(index=False).encode("utf-8")
 st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv")
 
-# Visual
+# Visualização
 with st.expander("🖼️ Visualizar primeira página dos PDFs"):
     col3, col4 = st.columns(2)
     with col3:
