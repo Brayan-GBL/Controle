@@ -64,6 +64,10 @@ def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return "\n".join([page.get_text() for page in doc])
 
+def renderizar_primeira_pagina(file_bytes):
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+        return doc[0].get_pixmap(dpi=120).tobytes("png")
+
 def limpar_texto(texto):
     return re.sub(r'\s+', ' ', texto or '').strip()
 
@@ -95,9 +99,9 @@ def extrair_campos_nf(texto_nf):
         "nome_cliente": buscar_regex(texto_nf, r"ESCOLA.*"),
         "endereco_cliente": buscar_regex(texto_nf, r"AV\s+GAL\s+CARLOS\s+CAVALCANTI.*"),
         "cnpj_cliente": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
-        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*:?\s*(\d+)"),
-        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*:?\s*([\d.,]+)"),
-        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*:?\s*(.*?)\s"),
+        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*:?.*?(\d+)"),
+        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*:?.*?([\d.,]+)"),
+        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*:?.*?(\w+)"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
         "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s+([\d.,]+)"),
         "transportadora_razao": buscar_regex(texto_nf, r"RAZ[\u00c3A]O SOCIAL\s+(.*?)\s+ENDERE\u00c7O"),
@@ -174,5 +178,14 @@ if nf_file and rma_file:
 
     csv = resultado_df.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv")
+
+    with st.expander("🖼️ Visualizar primeira página dos PDFs"):
+        col3, col4 = st.columns(2)
+        with col3:
+            st.subheader("📑 Nota Fiscal")
+            st.image(renderizar_primeira_pagina(BytesIO(nf_bytes)), use_container_width=True)
+        with col4:
+            st.subheader("📑 RMA")
+            st.image(renderizar_primeira_pagina(BytesIO(rma_bytes)), use_container_width=True)
 else:
     st.info("👆 Envie os dois PDFs para iniciar a verificação.")
