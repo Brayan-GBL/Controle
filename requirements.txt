@@ -9,3 +9,4 @@ seaborn
 pmdarima
 pymupdf
 PyPDF2
+lxml
