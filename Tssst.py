@@ -4,6 +4,8 @@ import pandas as pd
 import re
 from io import BytesIO
 from difflib import SequenceMatcher
+from PIL import Image, ImageDraw
+import tempfile
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
@@ -91,9 +93,9 @@ def extrair_campos_nf(texto_nf):
         "nome_cliente": buscar_regex(texto_nf, r"NOME/RAZ[\u00c3A]O SOCIAL\s*(.*?)\s+(?:Documento|CNPJ)"),
         "endereco_cliente": buscar_regex(texto_nf, r"ENDERE[\u00c7C]O\s+(.*?)\s+BAIRRO"),
         "cnpj_cliente": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
-        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*:?\s*(\d+)"),
-        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*:?\s*([\d.,]+)"),
-        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*(.*?)\s"),
+        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*:?[\s\n]+(\d+)"),
+        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*:?[\s\n]+([\d.,]+)"),
+        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*:?\s*(.*?)\s"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
         "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s+([\d.,]+)"),
         "transportadora_razao": buscar_regex(texto_nf, r"RAZ[\u00c3A]O SOCIAL\s+(.*?)\s+ENDERE\u00c7O"),
