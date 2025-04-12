@@ -169,6 +169,9 @@ if nf_file and rma_file:
     texto_nf = extrair_texto_com_pypdf2(nf_bytes)
     texto_rma = extrair_texto_pdf(rma_bytes)
 
+    st.markdown("### 📝 Texto extraído da Nota Fiscal")
+    st.code(texto_nf)
+
     dados_nf = extrair_campos_nf(texto_nf)
     resultado_df = analisar_dados(dados_nf, texto_rma)
     resultado_df["Status"] = resultado_df["Status"].apply(lambda x: "✅" if x else "❌")
