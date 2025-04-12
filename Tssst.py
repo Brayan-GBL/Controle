@@ -77,14 +77,17 @@ def buscar_regex(texto, padrao):
     return match.group(0).strip()
 
 def extrair_valor_total_rma(texto):
-    match = re.search(r"TOTAL GERAL\s*(\d{1,3}(?:\.\d{3})*,\d{2})", texto, re.IGNORECASE)
+    match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, re.IGNORECASE)
     if match:
         return match.group(1)
-    match_alt = re.search(r"TOTAL\s*[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})", texto, re.IGNORECASE)
-    return match_alt.group(1) if match_alt else None
+    match_alt = re.search(r"TOTAL GERAL\s*([\d.,]+)", texto, re.IGNORECASE)
+    if match_alt:
+        return match_alt.group(1)
+    match_final = re.search(r"TOTAL\s*[:\s]+([\d.,]+)", texto, re.IGNORECASE)
+    return match_final.group(1) if match_final else None
 
 def extrair_campos_nf(texto_nf):
-    campos = {
+    return {
         "nome_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z ]{5,}(?=\n)"),
         "endereco_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z].*\d{3,}.*(?=\n)"),
         "cnpj_cliente": buscar_regex(texto_nf, r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"),
@@ -93,14 +96,13 @@ def extrair_campos_nf(texto_nf):
         "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*\n(.*?)\n"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
         "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s*\n([\d.,]+)"),
-        "transportadora_razao": buscar_regex(texto_nf, r"TRANSPORTADOR / VOLUMES TRANSPORTADOS\s*\n(.*?)\n") or "",
+        "transportadora_razao": buscar_regex(texto_nf, r"TRANSPORTADOR / VOLUMES TRANSPORTADOS\s*\n(.*?)\n"),
         "transportadora_cnpj": buscar_regex(texto_nf, r"\n(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\n"),
         "transportadora_ie": buscar_regex(texto_nf, r"INSCRIÇÃO ESTADUAL\s*\n(\d{8,})"),
         "transportadora_endereco": buscar_regex(texto_nf, r"ENDEREÇO\s*\n(.*?)\n"),
         "transportadora_cidade": buscar_regex(texto_nf, r"MUNIC[IÍ]PIO\s*\n(.*?)\n"),
         "transportadora_uf": buscar_regex(texto_nf, r"UF\s*\n(\w{2})")
     }
-    return campos
 
 def analisar_dados(nf, rma_texto):
     extrair = lambda p: buscar_regex(rma_texto, p)
