@@ -54,7 +54,7 @@ transportadoras = {
 # ====================== FUNÇÕES AUXILIARES =======================
 def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        return "\n".join([page.get_text() for page in doc])
+        return "\n".join([page.get_text("text") for page in doc])
 
 def renderizar_primeira_pagina(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
@@ -77,31 +77,31 @@ def buscar_regex(texto, padrao):
     return match.group(0).strip()
 
 def extrair_valor_total_rma(texto):
-    match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, re.IGNORECASE)
+    match = re.search(r"Tot\\.\\s*Liquido\(R\\$.*?\):\\s*([\\d.,]+)", texto, re.IGNORECASE)
     if match:
         return match.group(1)
-    match_alt = re.search(r"TOTAL GERAL\s*([\d.,]+)", texto, re.IGNORECASE)
+    match_alt = re.search(r"TOTAL GERAL\\s*([\\d.,]+)", texto, re.IGNORECASE)
     if match_alt:
         return match_alt.group(1)
-    match_final = re.search(r"TOTAL\s*[:\s]+([\d.,]+)", texto, re.IGNORECASE)
+    match_final = re.search(r"TOTAL\\s*[:\\s]+([\\d.,]+)", texto, re.IGNORECASE)
     return match_final.group(1) if match_final else None
 
 def extrair_campos_nf(texto_nf):
     return {
-        "nome_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z ]{5,}(?=\n)"),
-        "endereco_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z].*\d{3,}.*(?=\n)"),
-        "cnpj_cliente": buscar_regex(texto_nf, r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"),
-        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*\n(\d+)"),
-        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*\n([\d.,]+)"),
-        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*\n(.*?)\n"),
+        "nome_cliente": buscar_regex(texto_nf, r"DESTINAT[ÁA]RIO.*?NOME/RAZ[ÃA]O SOCIAL\s*(.*?)\s+Documento"),
+        "endereco_cliente": buscar_regex(texto_nf, r"ENDERE[ÇC]O\s+(.*?)\s+BAIRRO"),
+        "cnpj_cliente": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
+        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s+(\d+)"),
+        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s+([\d.,]+)"),
+        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s+([^-\n]+)"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
-        "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s*\n([\d.,]+)"),
-        "transportadora_razao": buscar_regex(texto_nf, r"RAZÃO SOCIAL\s*\n(.*?)\n"),
-        "transportadora_cnpj": buscar_regex(texto_nf, r"\n(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\n"),
-        "transportadora_ie": buscar_regex(texto_nf, r"INSCRIÇÃO ESTADUAL\s*\n(\d{8,})"),
-        "transportadora_endereco": buscar_regex(texto_nf, r"ENDEREÇO\s*\n(.*?)\n"),
-        "transportadora_cidade": buscar_regex(texto_nf, r"MUNIC[IÍ]PIO\s*\n(.*?)\n"),
-        "transportadora_uf": buscar_regex(texto_nf, r"UF\s*\n(\w{2})")
+        "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s+([\d.,]+)"),
+        "transportadora_razao": buscar_regex(texto_nf, r"RAZ[ÃA]O SOCIAL\s+(.*?)\s+ENDEREÇO"),
+        "transportadora_cnpj": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
+        "transportadora_ie": buscar_regex(texto_nf, r"INSCRIÇÃO ESTADUAL\s+(\d{8,})"),
+        "transportadora_endereco": buscar_regex(texto_nf, r"ENDERE[ÇC]O\s+(.*?)\s+MUNIC[IÍ]PIO"),
+        "transportadora_cidade": buscar_regex(texto_nf, r"MUNIC[IÍ]PIO\s+(.*?)\s+UF"),
+        "transportadora_uf": buscar_regex(texto_nf, r"UF\s+(PR|SC|RS|SP|MG|RJ|ES|BA|CE|PE|AM)")
     }
 
 def analisar_dados(nf, rma_texto):
