@@ -58,9 +58,18 @@ def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return "\n".join([page.get_text("text") for page in doc])
 
-def renderizar_primeira_pagina(file_bytes):
+def renderizar_primeira_pagina(file_bytes, destaques=None):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        return doc[0].get_pixmap(dpi=120).tobytes("png")
+        pix = doc[0].get_pixmap(dpi=150)
+        img = Image.open(BytesIO(pix.tobytes("png")))
+        if destaques:
+            draw = ImageDraw.Draw(img)
+            for campo, cor, bbox in destaques:
+                draw.rectangle(bbox, outline=cor, width=4)
+                draw.text((bbox[0] + 2, bbox[1] - 15), campo, fill=cor)
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue()
 
 def limpar_texto(texto):
     return re.sub(r'\s+', ' ', texto or '').strip()
@@ -120,6 +129,7 @@ def analisar_dados(nf, rma_texto):
         "transportadora_razao": extrair(r'Transportadora:\s*(.*?)(\s|$)')
     }
 
+    destaques = []
     resultado = []
     for campo, val_nf in nf.items():
         if campo not in rma:
@@ -133,6 +143,8 @@ def analisar_dados(nf, rma_texto):
         else:
             ok = similaridade(val_nf or '', val_rma or '') > 0.85
         resultado.append((campo.replace('_', ' ').title(), val_nf, val_rma, ok))
+        if not ok:
+            destaques.append((campo.replace('_', ' ').title(), "red", (20, 20 + 25 * len(destaques), 600, 40 + 25 * len(destaques))))
 
     nome_rma = rma.get("transportadora_razao")
     transp_ok = False
@@ -147,7 +159,9 @@ def analisar_dados(nf, rma_texto):
             d["uf"].lower() in (nf.get("transportadora_uf") or '').lower()
         ])
     resultado.append(("Transportadora", nf.get("transportadora_razao"), nome_rma, transp_ok))
-    return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Status"])
+    if not transp_ok:
+        destaques.append(("Transportadora", "red", (20, 20 + 25 * len(destaques), 600, 40 + 25 * len(destaques))))
+    return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Status"]), destaques
 
 # =========================== INTERFACE ================================
 st.title("✅ Verificador de Nota Fiscal x RMA")
@@ -164,7 +178,7 @@ if nf_file and rma_file:
     texto_rma = extrair_texto_pdf(rma_bytes)
 
     dados_nf = extrair_campos_nf(texto_nf)
-    resultado_df = analisar_dados(dados_nf, texto_rma)
+    resultado_df, destaques = analisar_dados(dados_nf, texto_rma)
     resultado_df["Status"] = resultado_df["Status"].apply(lambda x: "✅" if x else "❌")
 
     st.markdown("### 🔍 Comparação dos Dados")
@@ -177,7 +191,7 @@ if nf_file and rma_file:
         col3, col4 = st.columns(2)
         with col3:
             st.subheader("📑 Nota Fiscal")
-            st.image(renderizar_primeira_pagina(BytesIO(nf_bytes)), use_container_width=True)
+            st.image(renderizar_primeira_pagina(BytesIO(nf_bytes), destaques), use_container_width=True)
         with col4:
             st.subheader("📑 RMA")
             st.image(renderizar_primeira_pagina(BytesIO(rma_bytes)), use_container_width=True)
