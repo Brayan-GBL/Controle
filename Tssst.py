@@ -4,7 +4,9 @@ import pandas as pd
 import re
 from io import BytesIO
 from difflib import SequenceMatcher
-import easyocr
+import pytesseract
+from PIL import Image
+import tempfile
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
@@ -78,12 +80,14 @@ def buscar_regex(texto, padrao):
     return match.group(0).strip()
 
 def aplicar_ocr(fbytes):
-    reader = easyocr.Reader(['pt'], gpu=False)
-    with fitz.open(stream=fbytes, filetype="pdf") as doc:
-        pix = doc[0].get_pixmap(dpi=200)
-        img = BytesIO(pix.tobytes("png"))
-    resultado = reader.readtext(img.getvalue(), detail=0)
-    return "\n".join(resultado)
+    with tempfile.NamedTemporaryFile(suffix=".png") as tmp:
+        with fitz.open(stream=fbytes, filetype="pdf") as doc:
+            pix = doc[0].get_pixmap(dpi=200)
+            img_data = pix.tobytes("png")
+            tmp.write(img_data)
+            tmp.flush()
+            image = Image.open(tmp.name)
+            return pytesseract.image_to_string(image, lang='por')
 
 def extrair_campos_nf(texto_nf, fallback_ocr=None):
     campos = dict.fromkeys([
