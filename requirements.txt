@@ -8,5 +8,5 @@ matplotlib
 seaborn
 pmdarima
 pymupdf
-easyocr
-torch
+pytesseract
+Pillow
