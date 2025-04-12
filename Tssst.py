@@ -91,8 +91,8 @@ def extrair_campos_nf(texto_nf):
         "nome_cliente": buscar_regex(texto_nf, r"NOME/RAZ[\u00c3A]O SOCIAL\s*(.*?)\s+(?:Documento|CNPJ)"),
         "endereco_cliente": buscar_regex(texto_nf, r"ENDERE[\u00c7C]O\s+(.*?)\s+BAIRRO"),
         "cnpj_cliente": buscar_regex(texto_nf, r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b"),
-        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*(\d+)"),
-        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*([\d.,]+)"),
+        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*:?\s*(\d+)"),
+        "peso": buscar_regex(texto_nf, r"PESO L[IÍ]QUIDO\s*:?\s*([\d.,]+)"),
         "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*(.*?)\s"),
         "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
         "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s+([\d.,]+)"),
@@ -134,10 +134,10 @@ def analisar_dados(nf, rma_texto):
 
     nome_rma = rma.get("transportadora_razao")
     transp_ok = False
-    if nome_rma in transportadoras:
+    if nome_rma and nome_rma in transportadoras:
         d = transportadoras[nome_rma]
         transp_ok = all([
-            d["razao_social"].lower() in nf.get("transportadora_razao", '').lower(),
+            d["razao_social"].lower() in (nf.get("transportadora_razao") or '').lower(),
             d["cnpj"] in (nf.get("transportadora_cnpj") or ''),
             d["ie"] in (nf.get("transportadora_ie") or ''),
             d["endereco"].lower() in (nf.get("transportadora_endereco") or '').lower(),
