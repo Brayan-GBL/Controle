@@ -121,15 +121,27 @@ def extrair_dados_xml(xml_file):
     dest = root.find('.//nfe:dest', ns)
     vol = root.find('.//nfe:vol', ns)
     transp = root.find('.//nfe:transporta', ns)
-    infNFe = root.find('.//nfe:infNFe', ns)
+
+    frete_map = {
+        '0': 'Emitente',
+        '1': 'Destinatário',
+        '2': 'Terceiros',
+        '9': 'Sem Frete'
+    }
+    mod_frete_codigo = root.findtext('.//nfe:modFrete', default='', namespaces=ns)
+    mod_frete = frete_map.get(mod_frete_codigo, mod_frete_codigo)
+
+    endereco_logradouro = dest.findtext('nfe:enderDest/nfe:xLgr', default='', namespaces=ns)
+    endereco_numero = dest.findtext('nfe:enderDest/nfe:nro', default='', namespaces=ns)
+    endereco_cliente = f"{endereco_logradouro}, {endereco_numero}".strip(', ')
 
     return {
         "nome_cliente": dest.findtext('nfe:xNome', default='', namespaces=ns),
         "cnpj_cliente": dest.findtext('nfe:CNPJ', default='', namespaces=ns),
-        "endereco_cliente": dest.find('.//nfe:enderDest/nfe:xLgr', ns).text + ", " + dest.find('.//nfe:enderDest/nfe:nro', ns).text,
+        "endereco_cliente": endereco_cliente,
         "quantidade_caixas": vol.findtext('nfe:qVol', default='', namespaces=ns),
         "peso": vol.findtext('nfe:pesoL', default='', namespaces=ns),
-        "frete": root.findtext('.//nfe:modFrete', default='', namespaces=ns),
+        "frete": mod_frete,
         "cfop": root.findtext('.//nfe:CFOP', default='', namespaces=ns),
         "valor_total": root.findtext('.//nfe:vNF', default='', namespaces=ns),
         "transportadora_razao": transp.findtext('nfe:xNome', default='', namespaces=ns),
@@ -139,6 +151,33 @@ def extrair_dados_xml(xml_file):
         "transportadora_cidade": transp.findtext('nfe:xMun', default='', namespaces=ns),
         "transportadora_uf": transp.findtext('nfe:UF', default='', namespaces=ns),
     }
+
+import requests
+import base64
+from PIL import Image
+from lxml import html
+
+# ======================== CAPTCHA SEFAZ =============================
+def consultar_nfe_publica(chave):
+    import re
+    session = requests.Session()
+    url = 'https://www.nfe.fazenda.gov.br/portal/consulta.aspx?tipoConsulta=completa'
+    response = session.get(url)
+    html_content = response.text
+    base64_match = re.search(r'data:image/png;base64,([^"']+)', html_content)
+
+    if base64_match:
+        img_base64 = img_data[0].split(',')[-1]
+        image_bytes = base64.b64decode(img_base64)
+        image = Image.open(BytesIO(image_bytes))
+        st.image(image, caption="Digite o código da imagem (CAPTCHA)")
+        captcha = st.text_input("🔐 Código CAPTCHA", key="captcha")
+        if captcha:
+            st.info("📡 Enviando dados para SEFAZ...")
+            st.warning("🚧 Integração com consulta pública ainda em desenvolvimento.")
+    else:
+        st.error("❌ Não foi possível carregar o captcha da SEFAZ.")
+
 
 # =========================== INTERFACE ================================
 st.title("✅ Verificador de Nota Fiscal x RMA")
@@ -153,6 +192,10 @@ with col3:
 
 chave_manual = st.text_input("🔑 Caso não tenha o XML, cole a chave de acesso (44 dígitos)")
 
+if st.button("🔍 Buscar NF pela Chave") and chave_manual:
+    consultar_nfe_publica(chave_manual)
+    st.stop()
+
 if rma_file:
     rma_bytes = rma_file.read()
     texto_rma = extrair_texto_pdf(rma_bytes)
@@ -165,11 +208,8 @@ if rma_file:
         texto_nf = extrair_texto_com_pypdf2(nf_bytes)
         dados_nf = extrair_campos_nf(texto_nf)
         origem = "PDF"
-    elif chave_manual:
-        st.warning("⚠️ Integração com SEFAZ em desenvolvimento...")
-        st.stop()
     else:
-        st.info("👆 Envie a NF, XML ou chave de acesso.")
+        st.info("👆 Envie a NF, XML ou use a chave de acesso.")
         st.stop()
 
     def analisar_dados(nf, rma_texto):
