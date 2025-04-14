@@ -119,8 +119,8 @@ def extrair_dados_xml(xml_file):
     ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
 
     dest = root.find('.//nfe:dest', ns)
-    vol = root.find('.//nfe:vol', ns)
-    transp = root.find('.//nfe:transporta', ns)
+    vol = root.find('.//nfe:vol', ns) if root.find('.//nfe:vol', ns) is not None else None
+    transp = root.find('.//nfe:transporta', ns) if root.find('.//nfe:transporta', ns) is not None else None
 
     frete_map = {
         '0': 'Emitente',
@@ -139,8 +139,8 @@ def extrair_dados_xml(xml_file):
         "nome_cliente": dest.findtext('nfe:xNome', default='', namespaces=ns),
         "cnpj_cliente": dest.findtext('nfe:CNPJ', default='', namespaces=ns),
         "endereco_cliente": endereco_cliente,
-        "quantidade_caixas": vol.findtext('nfe:qVol', default='', namespaces=ns),
-        "peso": vol.findtext('nfe:pesoL', default='', namespaces=ns),
+        "quantidade_caixas": vol.findtext('nfe:qVol', default='', namespaces=ns) if vol else '',
+        "peso": vol.findtext('nfe:pesoL', default='', namespaces=ns) if vol else '',
         "frete": mod_frete,
         "cfop": root.findtext('.//nfe:CFOP', default='', namespaces=ns),
         "valor_total": root.findtext('.//nfe:vNF', default='', namespaces=ns),
@@ -170,6 +170,8 @@ if rma_file:
     if xml_file:
         dados_nf = extrair_dados_xml(xml_file)
         origem = "XML"
+        if nf_file:
+            nf_bytes = nf_file.read()
     elif nf_file:
         nf_bytes = nf_file.read()
         texto_nf = extrair_texto_com_pypdf2(nf_bytes)
