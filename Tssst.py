@@ -117,10 +117,12 @@ def extrair_dados_xml(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
     ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
+    ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
 
     dest = root.find('.//nfe:dest', ns)
-    vol = root.find('.//nfe:vol', ns) if root.find('.//nfe:vol', ns) is not None else None
-    transp = root.find('.//nfe:transporta', ns) if root.find('.//nfe:transporta', ns) is not None else None
+    transp_base = root.find('.//nfe:transp', ns)
+    vol = transp_base.find('nfe:vol', ns) if transp_base is not None else None
+    transporta = transp_base.find('nfe:transporta', ns) if transp_base is not None else None
 
     frete_map = {
         '0': 'Emitente',
@@ -139,17 +141,17 @@ def extrair_dados_xml(xml_file):
         "nome_cliente": dest.findtext('nfe:xNome', default='', namespaces=ns),
         "cnpj_cliente": dest.findtext('nfe:CNPJ', default='', namespaces=ns),
         "endereco_cliente": endereco_cliente,
-        "quantidade_caixas": vol.findtext('nfe:qVol', default='', namespaces=ns) if vol else '',
-        "peso": vol.findtext('nfe:pesoL', default='', namespaces=ns) if vol else '',
+        "quantidade_caixas": vol.findtext('nfe:qVol', default='', namespaces=ns) if vol is not None else '',
+        "peso": vol.findtext('nfe:pesoL', default='', namespaces=ns) if vol is not None else '',
         "frete": mod_frete,
         "cfop": root.findtext('.//nfe:CFOP', default='', namespaces=ns),
         "valor_total": root.findtext('.//nfe:vNF', default='', namespaces=ns),
-        "transportadora_razao": transp.findtext('nfe:xNome', default='', namespaces=ns),
-        "transportadora_cnpj": transp.findtext('nfe:CNPJ', default='', namespaces=ns),
-        "transportadora_ie": transp.findtext('nfe:IE', default='', namespaces=ns),
-        "transportadora_endereco": transp.findtext('nfe:xEnder', default='', namespaces=ns),
-        "transportadora_cidade": transp.findtext('nfe:xMun', default='', namespaces=ns),
-        "transportadora_uf": transp.findtext('nfe:UF', default='', namespaces=ns),
+        "transportadora_razao": transporta.findtext('nfe:xNome', default='', namespaces=ns) if transporta is not None else '',
+        "transportadora_cnpj": transporta.findtext('nfe:CNPJ', default='', namespaces=ns) if transporta is not None else '',
+        "transportadora_ie": transporta.findtext('nfe:IE', default='', namespaces=ns) if transporta is not None else '',
+        "transportadora_endereco": transporta.findtext('nfe:xEnder', default='', namespaces=ns) if transporta is not None else '',
+        "transportadora_cidade": transporta.findtext('nfe:xMun', default='', namespaces=ns) if transporta is not None else '',
+        "transportadora_uf": transporta.findtext('nfe:UF', default='', namespaces=ns) if transporta is not None else '',
     }
 
 # =========================== INTERFACE ================================
