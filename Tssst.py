@@ -61,79 +61,65 @@ def extrair_texto_com_pypdf2(file_bytes):
         texto += page.extract_text() + "\n"
     return texto
 
-# normaliza string numérica: trata ponto/vírgula e milhar
+# Normaliza ponto/vírgula para float
 
 def parse_num(s):
     if not s:
         return 0.0
-    text = s.strip()
-    # se contém ponto e vírgula, assume ponto como separador de milhar e vírgula decimal
-    if '.' in text and ',' in text:
-        text = text.replace('.', '').replace(',', '.')
-    # se só vírgula, vírgula é decimal
-    elif ',' in text:
-        text = text.replace(',', '.')
-    # caso contrário, mantêm ponto como decimal
+    txt = s.strip()
+    if '.' in txt and ',' in txt:
+        txt = txt.replace('.', '').replace(',', '.')
+    elif ',' in txt:
+        txt = txt.replace(',', '.')
     try:
-        return float(text)
+        return float(txt)
     except:
         return 0.0
 
+# regex genérica
+
+def buscar_regex(texto, pat):
+    m = re.search(pat, texto, flags=re.IGNORECASE)
+    if not m:
+        return None
+    return m.group(1).strip() if m.lastindex else m.group(0).strip()
+
+# extrai campos de NF em PDF
 
 def extrair_campos_nf(texto_nf):
     return {
-        "nome_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z ]{5,}(?=\n)"),
-        "cnpj_cliente": buscar_regex(texto_nf, r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"),
-        "endereco_cliente": buscar_regex(texto_nf, r"AV.*?UVARANAS.*"),
-        "quantidade_caixas": buscar_regex(texto_nf, r"QUANTIDADE\s*(\d+)"),
-        "peso": buscar_regex(texto_nf, r"PESO (?:BRUTO|L[IÍ]QUIDO)\s*([\d.,]+)"),
-        "frete": buscar_regex(texto_nf, r"FRETE POR CONTA\s*\n(.*?)\n"),
-        "cfop": buscar_regex(texto_nf, r"\b(5202|6202|6949)\b"),
-        "valor_total": buscar_regex(texto_nf, r"VALOR TOTAL DA NOTA\s*[\n:]\s*([\d.,]+)"),
-        "transportadora_razao": buscar_regex(texto_nf, r"RAZ[AÃ]O SOCIAL\s*\n(.*?)\n"),
-        "transportadora_cnpj": buscar_regex(texto_nf, r"\n(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\n"),
-        "transportadora_ie": buscar_regex(texto_nf, r"INSCRI[ÇC][ÃA]O ESTADUAL\s*\n(\d{8,})"),
-        "transportadora_endereco": buscar_regex(texto_nf, r"ENDERE[ÇC]O\s*\n(.*?)\n"),
-        "transportadora_cidade": buscar_regex(texto_nf, r"MUNIC[IÍ]PIO\s*\n(.*?)\n"),
-        "transportadora_uf": buscar_regex(texto_nf, r"UF\s*\n(\w{2})")
+        'nome_cliente': buscar_regex(texto_nf, r'(?<=\n)[A-Z ]{5,}(?=\n)'),
+        'cnpj_cliente': buscar_regex(texto_nf, r'\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}'),
+        'endereco_cliente': buscar_regex(texto_nf, r'AV.*?UVARANAS.*'),
+        'quantidade_caixas': buscar_regex(texto_nf, r'QUANTIDADE\s*(\d+)'),
+        'peso': buscar_regex(texto_nf, r'PESO (?:BRUTO|L[IÍ]QUIDO)\s*([\d.,]+)'),
+        'frete': buscar_regex(texto_nf, r'FRETE POR CONTA\s*\n(.*?)\n'),
+        'cfop': buscar_regex(texto_nf, r'\b(5202|6202|6949)\b'),
+        'valor_total': buscar_regex(texto_nf, r'VALOR TOTAL DA NOTA\s*[\n:]\s*([\d.,]+)'),
+        'transportadora_razao': buscar_regex(texto_nf, r'RAZ[AÃ]O SOCIAL\s*\n(.*?)\n'),
+        'transportadora_cnpj': buscar_regex(texto_nf, r'\n(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\n'),
+        'transportadora_ie': buscar_regex(texto_nf, r'INSCRI[ÇC][ÃA]O ESTADUAL\s*\n(\d{8,})'),
+        'transportadora_endereco': buscar_regex(texto_nf, r'ENDERE[ÇC]O\s*\n(.*?)\n')
     }
 
+# extrai texto inteiro do PDF
 
 def extrair_texto_pdf(file_bytes):
-    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        return "\n".join([page.get_text() for page in doc])
+    with fitz.open(stream=file_bytes, filetype='pdf') as doc:
+        return '\n'.join(p.get_text() for p in doc)
 
+# renderiza primeira página
 
 def renderizar_primeira_pagina(file_bytes):
-    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
-        return doc[0].get_pixmap(dpi=120).tobytes("png")
+    with fitz.open(stream=file_bytes, filetype='pdf') as doc:
+        return doc[0].get_pixmap(dpi=120).tobytes('png')
 
-
-def limpar_texto(texto):
-    return re.sub(r'\s+', ' ', texto or '').strip()
-
+# similaridade textual
 
 def similaridade(a, b):
-    return SequenceMatcher(None, limpar_texto(a).lower(), limpar_texto(b).lower()).ratio()
+    return SequenceMatcher(None, re.sub(r'\s+', ' ', (a or '')).lower(), re.sub(r'\s+', ' ', (b or '')).lower()).ratio()
 
-
-def buscar_regex(texto, padrao):
-    match = re.search(padrao, texto, flags=re.IGNORECASE)
-    if not match:
-        return None
-    return match.group(1).strip() if match.lastindex else match.group(0).strip()
-
-
-def extrair_valor_total_rma(texto):
-    match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, re.IGNORECASE)
-    if match:
-        return match.group(1)
-    match_alt = re.search(r"TOTAL GERAL\s*([\d.,]+)", texto, re.IGNORECASE)
-    if match_alt:
-        return match_alt.group(1)
-    match_final = re.search(r"TOTAL\s*[:\s]+([\d.,]+)", texto, re.IGNORECASE)
-    return match_final.group(1) if match_final else None
-
+# extrai dados do XML
 
 def extrair_dados_xml(xml_file):
     tree = ET.parse(xml_file)
@@ -144,38 +130,39 @@ def extrair_dados_xml(xml_file):
     transp = root.find('.//nfe:transporta', ns)
     vol = root.find('.//nfe:vol', ns)
 
-    peso_b = vol.findtext('nfe:pesoB', '0', namespaces=ns) if vol is not None else '0'
-    peso_l = vol.findtext('nfe:pesoL', '0', namespaces=ns) if vol is not None else '0'
-    peso = peso_b if parse_num(peso_b) > 0 else peso_l
+    # peso: usa bruto ou liquido se disponível
+    pb = vol.findtext('nfe:pesoB', '0', namespaces=ns) if vol is not None else '0'
+    pl = vol.findtext('nfe:pesoL', '0', namespaces=ns) if vol is not None else '0'
+    peso = pb if parse_num(pb) > 0 else pl
 
-    frete_map = {'0': 'Emitente', '1': 'Destinatário', '2': 'Terceiros', '9': 'Sem Frete'}
-    mod_frete_codigo = root.findtext('.//nfe:modFrete', '', namespaces=ns)
-    frete = frete_map.get(mod_frete_codigo, mod_frete_codigo)
+    # frete
+    fmap = {'0':'Emitente','1':'Destinatário','2':'Terceiros','9':'Sem Frete'}
+    mf = root.findtext('.//nfe:modFrete','', namespaces=ns)
+    frete = fmap.get(mf, mf)
 
-    log = emit.findtext('nfe:enderEmit/nfe:xLgr', '', namespaces=ns)
-    nro = emit.findtext('nfe:enderEmit/nfe:nro', '', namespaces=ns)
-    endereco_emit = f"{log}, {nro}".strip(', ')
+    # endereço emitente
+    log = emit.findtext('nfe:enderEmit/nfe:xLgr','',namespaces=ns)
+    nro = emit.findtext('nfe:enderEmit/nfe:nro','',namespaces=ns)
+    end_emit = f"{log}, {nro}".strip(', ')
 
     return {
-        'nome_cliente': emit.findtext('nfe:xNome', '', namespaces=ns),
-        'cnpj_cliente': emit.findtext('nfe:CNPJ', '', namespaces=ns),
-        'endereco_cliente': endereco_emit,
-        'quantidade_caixas': vol.findtext('nfe:qVol', '', namespaces=ns) if vol is not None else '',
+        'nome_cliente': emit.findtext('nfe:xNome','',namespaces=ns),
+        'cnpj_cliente': emit.findtext('nfe:CNPJ','',namespaces=ns),
+        'endereco_cliente': end_emit,
+        'quantidade_caixas': vol.findtext('nfe:qVol','',namespaces=ns) if vol is not None else '',
         'peso': peso,
         'frete': frete,
-        'cfop': root.findtext('.//nfe:CFOP', '', namespaces=ns),
-        'valor_total': root.findtext('.//nfe:vNF', '', namespaces=ns),
-        'transportadora_razao': transp.findtext('nfe:xNome', '', namespaces=ns) if transp is not None else '',
-        'transportadora_cnpj': transp.findtext('nfe:CNPJ', '', namespaces=ns) if transp is not None else '',
-        'transportadora_ie': transp.findtext('nfe:IE', '', namespaces=ns) if transp is not None else '',
-        'transportadora_endereco': transp.findtext('nfe:xEnder', '', namespaces=ns) if transp is not None else '',
-        'transportadora_cidade': transp.findtext('nfe:xMun', '', namespaces=ns) if transp is not None else '',
-        'transportadora_uf': transp.findtext('nfe:UF', '', namespaces=ns) if transp is not None else ''
+        'cfop': root.findtext('.//nfe:CFOP','',namespaces=ns),
+        'valor_total': root.findtext('.//nfe:vNF','',namespaces=ns),
+        'transportadora_razao': transp.findtext('nfe:xNome','',namespaces=ns) if transp is not None else '',
+        'transportadora_cnpj': transp.findtext('nfe:CNPJ','',namespaces=ns) if transp is not None else '',
+        'transportadora_ie': transp.findtext('nfe:IE','',namespaces=ns) if transp is not None else '',
+        'transportadora_endereco': transp.findtext('nfe:xEnder','',namespaces=ns) if transp is not None else ''
     }
 
 # =========================== INTERFACE ================================
 st.title("✅ Verificador de Nota Fiscal x RMA")
-col1, col2, col3 = st.columns(3)
+col1,col2,col3 = st.columns(3)
 with col1:
     nf_file = st.file_uploader("📄 Enviar Nota Fiscal (PDF)", type=["pdf"])
 with col2:
@@ -189,78 +176,78 @@ if rma_file:
 
     if xml_file:
         dados_nf = extrair_dados_xml(xml_file)
-        origem = "XML"
+        origem = 'XML'
         if nf_file: nf_bytes = nf_file.read()
     elif nf_file:
         nf_bytes = nf_file.read()
         texto_nf = extrair_texto_com_pypdf2(nf_bytes)
         dados_nf = extrair_campos_nf(texto_nf)
-        origem = "PDF"
+        origem = 'PDF'
     else:
         st.info("👆 Envie a NF ou XML para iniciar a verificação.")
         st.stop()
 
     def analisar_dados(nf, rma_texto):
-        def extrair(p): return buscar_regex(rma_texto, p)
+        def ext(p): return buscar_regex(rma_texto, p)
         rma = {
-            "nome_cliente": extrair(r'Nome/Raz[aã]o\s*Social:\s*(.*?)\n'),
-            "endereco_cliente": extrair(r'Endere[cç]o:\s*(.*?)\s+CEP'),
-            "cnpj_cliente": extrair(r'CPF/CNPJ\s*[:\s]*([\d./-]+)'),
-            "quantidade_caixas": extrair(r'Volume:\s*(\d+)'),
-            "peso": extrair(r'Peso:\s*([\d.,]+)'),
-            "frete": extrair(r'Frete:\s*(\w+)'),
-            "cfop": extrair(r'CFOP:\s*(\d+)'),
-            "valor_total": extrair_valor_total_rma(rma_texto),
-            "transportadora_razao": extrair(r'Transportadora:\s*(.*?)(\s|$)')
+            'nome_cliente': ext(r'Nome/Raz[aã]o\s*Social:\s*(.*?)\n'),
+            'endereco_cliente': ext(r'Endere[cç]o:\s*(.*?)\s+CEP'),
+            'cnpj_cliente': ext(r'CPF/CNPJ\s*[:\s]*([\d./-]+)'),
+            'quantidade_caixas': ext(r'Volume:\s*(\d+)'),
+            'peso': ext(r'Peso:\s*([\d.,]+)'),
+            'frete': ext(r'Frete:\s*(\w+)'),
+            'cfop': ext(r'CFOP:\s*(\d+)'),
+            'valor_total': extrair_valor_total_rma(rma_texto),
+            'transportadora_razao': ext(r'Transportadora:\s*(.*?)(\s|$)')
         }
 
-        resultado = []
-        for campo, val_nf in nf.items():
+        rows = []
+        for campo, v_nf in nf.items():
             if campo not in rma: continue
-            val_rma = rma[campo]
-            if campo in ("valor_total", "peso"):
-                num_nf = parse_num(val_nf)
-                num_rma = parse_num(val_rma)
-                tol = 0.99 if campo == "valor_total" else 0.01
-                ok = abs(num_nf - num_rma) <= tol
+            v_r = rma[campo]
+            if campo in ('valor_total','peso'):
+                tol = 0.99 if campo=='valor_total' else 0.01
+                ok = abs(parse_num(v_nf) - parse_num(v_r)) <= tol
             else:
-                ok = similaridade(val_nf or '', val_rma or '') > 0.85
-            resultado.append((campo.replace('_', ' ').title(), val_nf, val_rma, ok))
+                ok = similaridade(v_nf, v_r) > 0.85
+            rows.append((campo.replace('_',' ').title(), v_nf, v_r, ok))
 
-        nome = rma.get("transportadora_razao") or ''
-        key = nome if nome in transportadoras else None
-        if key:
-            d = transportadoras[key]
-            transp_rows = [
-                ("Transportadora Razao", nf.get("transportadora_razao", ''), d['razao_social'], d['razao_social'].lower() in nf.get("transportadora_razao", '').lower()),
-                ("Transportadora CNPJ", nf.get("transportadora_cnpj", ''), d['cnpj'], d['cnpj'] == nf.get("transportadora_cnpj", '')),
-                ("Transportadora IE", nf.get("transportadora_ie", ''), d['ie'], d['ie'] == nf.get("transportadora_ie", '')),
-                ("Transportadora Endereco", nf.get("transportadora_endereco", ''), d['endereco'], d['endereco'].lower() in nf.get("transportadora_endereco", '').lower())
-            ]
-            resultado.extend(transp_rows)
+        # comparação de transportadora contra base fixa
+        xml_name = nf.get('transportadora_razao','')
+        match = None
+        for k,v in transportadoras.items():
+            if v['razao_social'].lower() in xml_name.lower() or xml_name.lower() in v['razao_social'].lower() or similaridade(xml_name, v['razao_social'])>0.8:
+                match = k
+                break
+        if match:
+            base = transportadoras[match]
+            rows.extend([
+                ('Transportadora Razao', xml_name, base['razao_social'], base['razao_social'].lower() in xml_name.lower()),
+                ('Transportadora CNPJ', nf.get('transportadora_cnpj',''), base['cnpj'], base['cnpj']==nf.get('transportadora_cnpj','')),
+                ('Transportadora IE', nf.get('transportadora_ie',''), base['ie'], base['ie']==nf.get('transportadora_ie','')),
+                ('Transportadora Endereco', nf.get('transportadora_endereco',''), base['endereco'], base['endereco'].lower() in nf.get('transportadora_endereco','').lower())
+            ])
         else:
-            resultado.append(("Transportadora Razao", nome, '', False))
+            rows.append(('Transportadora Razao', xml_name, '', False))
 
-        return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Status"])
+        return pd.DataFrame(rows, columns=['Campo','Valor NF','Valor RMA','Status'])
 
-    df_result = analisar_dados(dados_nf, texto_rma)
-    df_result["Status"] = df_result["Status"].apply(lambda x: "✅" if x else "❌")
+    df = analisar_dados(dados_nf, texto_rma)
+    df['Status'] = df['Status'].apply(lambda x:'✅' if x else '❌')
 
     st.markdown(f"### 📋 Comparação dos Dados (Origem da NF: {origem})")
-    st.dataframe(df_result, use_container_width=True)
+    st.dataframe(df, use_container_width=True)
 
-    csv = df_result.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Baixar Relatório CSV", data=csv, file_name="comparacao_nf_rma.csv")
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 Baixar Relatório CSV", data=csv, file_name='comparacao_nf_rma.csv')
 
     with st.expander("🖼️ Visualizar PDFs"):
-        colA, colB = st.columns(2)
-        with colA:
+        c1,c2 = st.columns(2)
+        with c1:
             st.subheader("📑 Nota Fiscal")
-            if nf_file:
-                st.image(renderizar_primeira_pagina(BytesIO(nf_bytes)), use_column_width=True)
-            else:
-                st.info("NF não enviada.")
-        with colB:
+            if nf_file: st.image(renderizar_primeira_pagina(BytesIO(nf_bytes)), use_column_width=True)
+            else: st.info("NF não enviada.")
+        with c2:
             st.subheader("📑 RMA")
             st.image(renderizar_primeira_pagina(BytesIO(rma_bytes)), use_column_width=True)
 else:
