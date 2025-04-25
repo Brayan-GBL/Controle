@@ -61,6 +61,24 @@ def extrair_texto_com_pypdf2(file_bytes):
         texto += page.extract_text() + "\n"
     return texto
 
+# normaliza string numérica: trata ponto/vírgula e milhar
+
+def parse_num(s):
+    if not s:
+        return 0.0
+    text = s.strip()
+    # se contém ponto e vírgula, assume ponto como separador de milhar e vírgula decimal
+    if '.' in text and ',' in text:
+        text = text.replace('.', '').replace(',', '.')
+    # se só vírgula, vírgula é decimal
+    elif ',' in text:
+        text = text.replace(',', '.')
+    # caso contrário, mantêm ponto como decimal
+    try:
+        return float(text)
+    except:
+        return 0.0
+
 
 def extrair_campos_nf(texto_nf):
     return {
@@ -126,17 +144,14 @@ def extrair_dados_xml(xml_file):
     transp = root.find('.//nfe:transporta', ns)
     vol = root.find('.//nfe:vol', ns)
 
-    # peso: prioriza bruto
     peso_b = vol.findtext('nfe:pesoB', '0', namespaces=ns) if vol is not None else '0'
     peso_l = vol.findtext('nfe:pesoL', '0', namespaces=ns) if vol is not None else '0'
-    peso = peso_b if float(peso_b.replace(',', '.')) > 0 else peso_l
+    peso = peso_b if parse_num(peso_b) > 0 else peso_l
 
-    # frete
     frete_map = {'0': 'Emitente', '1': 'Destinatário', '2': 'Terceiros', '9': 'Sem Frete'}
     mod_frete_codigo = root.findtext('.//nfe:modFrete', '', namespaces=ns)
     frete = frete_map.get(mod_frete_codigo, mod_frete_codigo)
 
-    # endereço emitente
     log = emit.findtext('nfe:enderEmit/nfe:xLgr', '', namespaces=ns)
     nro = emit.findtext('nfe:enderEmit/nfe:nro', '', namespaces=ns)
     endereco_emit = f"{log}, {nro}".strip(', ')
@@ -204,18 +219,14 @@ if rma_file:
             if campo not in rma: continue
             val_rma = rma[campo]
             if campo in ("valor_total", "peso"):
-                try:
-                    num_nf = float(val_nf.replace('.', '').replace(',', '.'))
-                    num_rma = float(val_rma.replace('.', '').replace(',', '.'))
-                    tol = 0.99 if campo == "valor_total" else 0.01
-                    ok = abs(num_nf - num_rma) <= tol
-                except:
-                    ok = False
+                num_nf = parse_num(val_nf)
+                num_rma = parse_num(val_rma)
+                tol = 0.99 if campo == "valor_total" else 0.01
+                ok = abs(num_nf - num_rma) <= tol
             else:
                 ok = similaridade(val_nf or '', val_rma or '') > 0.85
             resultado.append((campo.replace('_', ' ').title(), val_nf, val_rma, ok))
 
-        # transportadora: múltiplos campos
         nome = rma.get("transportadora_razao") or ''
         key = nome if nome in transportadoras else None
         if key:
