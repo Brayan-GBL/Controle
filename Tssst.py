@@ -61,6 +61,7 @@ def extrair_texto_com_pypdf2(file_bytes):
         texto += page.extract_text() + "\n"
     return texto
 
+
 def extrair_campos_nf(texto_nf):
     return {
         "nome_cliente": buscar_regex(texto_nf, r"(?<=\n)[A-Z ]{5,}(?=\n)"),
@@ -79,25 +80,31 @@ def extrair_campos_nf(texto_nf):
         "transportadora_uf": buscar_regex(texto_nf, r"UF\s*\n(\w{2})")
     }
 
+
 def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return "\n".join([page.get_text() for page in doc])
+
 
 def renderizar_primeira_pagina(file_bytes):
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         return doc[0].get_pixmap(dpi=120).tobytes("png")
 
+
 def limpar_texto(texto):
     return re.sub(r'\s+', ' ', texto or '').strip()
 
+
 def similaridade(a, b):
     return SequenceMatcher(None, limpar_texto(a).lower(), limpar_texto(b).lower()).ratio()
+
 
 def buscar_regex(texto, padrao):
     match = re.search(padrao, texto, flags=re.IGNORECASE)
     if not match:
         return None
     return match.group(1).strip() if match.lastindex else match.group(0).strip()
+
 
 def extrair_valor_total_rma(texto):
     match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, re.IGNORECASE)
@@ -109,12 +116,12 @@ def extrair_valor_total_rma(texto):
     match_final = re.search(r"TOTAL\s*[:\s]+([\d.,]+)", texto, re.IGNORECASE)
     return match_final.group(1) if match_final else None
 
+
 def extrair_dados_xml(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
     ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
 
-    # dados do emitente
     emit = root.find('.//nfe:emit', ns)
     transp = root.find('.//nfe:transporta', ns)
     vol = root.find('.//nfe:vol', ns)
@@ -151,7 +158,7 @@ def extrair_dados_xml(xml_file):
         'transportadora_uf': transp.findtext('nfe:UF', '', namespaces=ns) if transp is not None else ''
     }
 
-# interface
+# =========================== INTERFACE ================================
 st.title("✅ Verificador de Nota Fiscal x RMA")
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -208,17 +215,16 @@ if rma_file:
                 ok = similaridade(val_nf or '', val_rma or '') > 0.85
             resultado.append((campo.replace('_', ' ').title(), val_nf, val_rma, ok))
 
+        # transportadora: múltiplos campos
         nome = rma.get("transportadora_razao") or ''
         key = nome if nome in transportadoras else None
         if key:
             d = transportadoras[key]
             transp_rows = [
                 ("Transportadora Razao", nf.get("transportadora_razao", ''), d['razao_social'], d['razao_social'].lower() in nf.get("transportadora_razao", '').lower()),
-                ("Transportadora CNPJ", nf.get("transportadora_cnpj", ''), d['cnpj'], d['cnpj'] == nf.get("transportadora_cnpj", '')), 
+                ("Transportadora CNPJ", nf.get("transportadora_cnpj", ''), d['cnpj'], d['cnpj'] == nf.get("transportadora_cnpj", '')),
                 ("Transportadora IE", nf.get("transportadora_ie", ''), d['ie'], d['ie'] == nf.get("transportadora_ie", '')),
-                ("Transportadora Endereco", nf.get("transportadora_endereco", ''), d['endereco'], d['endereco'].lower() in nf.get("transportadora_endereco", '').lower()),
-                ("Transportadora Cidade", nf.get("transportadora_cidade", ''), d['cidade'], d['cidade'].lower() == nf.get("transportadora_cidade", '').lower()),
-                ("Transportadora UF", nf.get("transportadora_uf", ''), d['uf'], d['uf'] == nf.get("transportadora_uf", ''))
+                ("Transportadora Endereco", nf.get("transportadora_endereco", ''), d['endereco'], d['endereco'].lower() in nf.get("transportadora_endereco", '').lower())
             ]
             resultado.extend(transp_rows)
         else:
