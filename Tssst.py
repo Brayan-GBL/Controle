@@ -91,9 +91,7 @@ def limpar_texto(texto):
     return re.sub(r'\s+', ' ', texto or '').strip()
 
 def similaridade(a, b):
-    a = limpar_texto(a).lower()
-    b = limpar_texto(b).lower()
-    return SequenceMatcher(None, a, b).ratio()
+    return SequenceMatcher(None, limpar_texto(a).lower(), limpar_texto(b).lower()).ratio()
 
 def buscar_regex(texto, padrao):
     match = re.search(padrao, texto, flags=re.IGNORECASE)
@@ -116,46 +114,45 @@ def extrair_dados_xml(xml_file):
     root = tree.getroot()
     ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
 
-    # Usar dados do emitente
+    # dados do emitente
     emit = root.find('.//nfe:emit', ns)
     transp = root.find('.//nfe:transporta', ns)
     vol = root.find('.//nfe:vol', ns)
 
-    # Peso: prioriza bruto, senão líquido, senão zero
-    peso_b = vol.findtext('nfe:pesoB', default='0', namespaces=ns) if vol is not None else '0'
-    peso_l = vol.findtext('nfe:pesoL', default='0', namespaces=ns) if vol is not None else '0'
+    # peso: prioriza bruto
+    peso_b = vol.findtext('nfe:pesoB', '0', namespaces=ns) if vol is not None else '0'
+    peso_l = vol.findtext('nfe:pesoL', '0', namespaces=ns) if vol is not None else '0'
     peso = peso_b if float(peso_b.replace(',', '.')) > 0 else peso_l
 
-    # Mapeamento frete
-    frete_map = {'0': 'Emitente','1': 'Destinatário','2': 'Terceiros','9': 'Sem Frete'}
-    mod_frete_codigo = root.findtext('.//nfe:modFrete', default='', namespaces=ns)
+    # frete
+    frete_map = {'0': 'Emitente', '1': 'Destinatário', '2': 'Terceiros', '9': 'Sem Frete'}
+    mod_frete_codigo = root.findtext('.//nfe:modFrete', '', namespaces=ns)
     frete = frete_map.get(mod_frete_codigo, mod_frete_codigo)
 
-    # Endereço emitente
-    log = emit.findtext('nfe:enderEmit/nfe:xLgr', default='', namespaces=ns)
-    nro = emit.findtext('nfe:enderEmit/nfe:nro', default='', namespaces=ns)
+    # endereço emitente
+    log = emit.findtext('nfe:enderEmit/nfe:xLgr', '', namespaces=ns)
+    nro = emit.findtext('nfe:enderEmit/nfe:nro', '', namespaces=ns)
     endereco_emit = f"{log}, {nro}".strip(', ')
 
     return {
-        'nome_cliente': emit.findtext('nfe:xNome', default='', namespaces=ns),
-        'cnpj_cliente': emit.findtext('nfe:CNPJ', default='', namespaces=ns),
+        'nome_cliente': emit.findtext('nfe:xNome', '', namespaces=ns),
+        'cnpj_cliente': emit.findtext('nfe:CNPJ', '', namespaces=ns),
         'endereco_cliente': endereco_emit,
-        'quantidade_caixas': vol.findtext('nfe:qVol', default='', namespaces=ns) if vol is not None else '',
+        'quantidade_caixas': vol.findtext('nfe:qVol', '', namespaces=ns) if vol is not None else '',
         'peso': peso,
         'frete': frete,
-        'cfop': root.findtext('.//nfe:CFOP', default='', namespaces=ns),
-        'valor_total': root.findtext('.//nfe:vNF', default='', namespaces=ns),
-        'transportadora_razao': transp.findtext('nfe:xNome', default='', namespaces=ns) if transp is not None else '',
-        'transportadora_cnpj': transp.findtext('nfe:CNPJ', default='', namespaces=ns) if transp is not None else '',
-        'transportadora_ie': transp.findtext('nfe:IE', default='', namespaces=ns) if transp is not None else '',
-        'transportadora_endereco': transp.findtext('nfe:xEnder', default='', namespaces=ns) if transp is not None else '',
-        'transportadora_cidade': transp.findtext('nfe:xMun', default='', namespaces=ns) if transp is not None else '',
-        'transportadora_uf': transp.findtext('nfe:UF', default='', namespaces=ns) if transp is not None else ''
+        'cfop': root.findtext('.//nfe:CFOP', '', namespaces=ns),
+        'valor_total': root.findtext('.//nfe:vNF', '', namespaces=ns),
+        'transportadora_razao': transp.findtext('nfe:xNome', '', namespaces=ns) if transp is not None else '',
+        'transportadora_cnpj': transp.findtext('nfe:CNPJ', '', namespaces=ns) if transp is not None else '',
+        'transportadora_ie': transp.findtext('nfe:IE', '', namespaces=ns) if transp is not None else '',
+        'transportadora_endereco': transp.findtext('nfe:xEnder', '', namespaces=ns) if transp is not None else '',
+        'transportadora_cidade': transp.findtext('nfe:xMun', '', namespaces=ns) if transp is not None else '',
+        'transportadora_uf': transp.findtext('nfe:UF', '', namespaces=ns) if transp is not None else ''
     }
 
-# =========================== INTERFACE ================================
+# interface
 st.title("✅ Verificador de Nota Fiscal x RMA")
-
 col1, col2, col3 = st.columns(3)
 with col1:
     nf_file = st.file_uploader("📄 Enviar Nota Fiscal (PDF)", type=["pdf"])
@@ -171,8 +168,7 @@ if rma_file:
     if xml_file:
         dados_nf = extrair_dados_xml(xml_file)
         origem = "XML"
-        if nf_file:
-            nf_bytes = nf_file.read()
+        if nf_file: nf_bytes = nf_file.read()
     elif nf_file:
         nf_bytes = nf_file.read()
         texto_nf = extrair_texto_com_pypdf2(nf_bytes)
@@ -198,31 +194,36 @@ if rma_file:
 
         resultado = []
         for campo, val_nf in nf.items():
-            if campo not in rma:
-                continue
+            if campo not in rma: continue
             val_rma = rma[campo]
-            if campo == "valor_total":
+            if campo in ("valor_total", "peso"):
                 try:
-                    ok = abs(float(val_nf.replace(',', '.')) - float(val_rma.replace(',', '.'))) <= 0.99
+                    num_nf = float(val_nf.replace('.', '').replace(',', '.'))
+                    num_rma = float(val_rma.replace('.', '').replace(',', '.'))
+                    tol = 0.99 if campo == "valor_total" else 0.01
+                    ok = abs(num_nf - num_rma) <= tol
                 except:
                     ok = False
             else:
                 ok = similaridade(val_nf or '', val_rma or '') > 0.85
             resultado.append((campo.replace('_', ' ').title(), val_nf, val_rma, ok))
 
-        nome_rma = rma.get("transportadora_razao")
-        transp_ok = False
-        if nome_rma and nome_rma in transportadoras:
-            d = transportadoras[nome_rma]
-            transp_ok = all([
-                d["razao_social"].lower() in (nf.get("transportadora_razao") or '').lower(),
-                d["cnpj"] in (nf.get("transportadora_cnpj") or ''),
-                d["ie"] in (nf.get("transportadora_ie") or ''),
-                d["endereco"].lower() in (nf.get("transportadora_endereco") or '').lower(),
-                d["cidade"].lower() in (nf.get("transportadora_cidade") or '').lower(),
-                d["uf"].lower() in (nf.get("transportadora_uf") or '').lower()
-            ])
-        resultado.append(("Transportadora", nf.get("transportadora_razao"), nome_rma, transp_ok))
+        nome = rma.get("transportadora_razao") or ''
+        key = nome if nome in transportadoras else None
+        if key:
+            d = transportadoras[key]
+            transp_rows = [
+                ("Transportadora Razao", nf.get("transportadora_razao", ''), d['razao_social'], d['razao_social'].lower() in nf.get("transportadora_razao", '').lower()),
+                ("Transportadora CNPJ", nf.get("transportadora_cnpj", ''), d['cnpj'], d['cnpj'] == nf.get("transportadora_cnpj", '')), 
+                ("Transportadora IE", nf.get("transportadora_ie", ''), d['ie'], d['ie'] == nf.get("transportadora_ie", '')),
+                ("Transportadora Endereco", nf.get("transportadora_endereco", ''), d['endereco'], d['endereco'].lower() in nf.get("transportadora_endereco", '').lower()),
+                ("Transportadora Cidade", nf.get("transportadora_cidade", ''), d['cidade'], d['cidade'].lower() == nf.get("transportadora_cidade", '').lower()),
+                ("Transportadora UF", nf.get("transportadora_uf", ''), d['uf'], d['uf'] == nf.get("transportadora_uf", ''))
+            ]
+            resultado.extend(transp_rows)
+        else:
+            resultado.append(("Transportadora Razao", nome, '', False))
+
         return pd.DataFrame(resultado, columns=["Campo", "Valor NF", "Valor RMA", "Status"])
 
     df_result = analisar_dados(dados_nf, texto_rma)
