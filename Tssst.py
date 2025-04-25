@@ -54,6 +54,7 @@ transportadoras = {
 }
 
 # ====================== FUNÇÕES AUXILIARES =======================
+# Extrai texto com PyPDF2
 def extrair_texto_com_pypdf2(file_bytes):
     reader = PyPDF2.PdfReader(BytesIO(file_bytes))
     texto = ""
@@ -61,8 +62,7 @@ def extrair_texto_com_pypdf2(file_bytes):
         texto += page.extract_text() + "\n"
     return texto
 
-# Normaliza ponto/vírgula para float
-
+# Normaliza strings numéricas para float
 def parse_num(s):
     if not s:
         return 0.0
@@ -76,16 +76,25 @@ def parse_num(s):
     except:
         return 0.0
 
-# regex genérica
+# Extrai valor total da RMA
+def extrair_valor_total_rma(texto):
+    match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, flags=re.IGNORECASE)
+    if match:
+        return match.group(1)
+    match_alt = re.search(r"TOTAL GERAL\s*([\d.,]+)", texto, flags=re.IGNORECASE)
+    if match_alt:
+        return match_alt.group(1)
+    match_final = re.search(r"TOTAL\s*[:\s]+([\d.,]+)", texto, flags=re.IGNORECASE)
+    return match_final.group(1) if match_final else None
 
+# Regex genérica
 def buscar_regex(texto, pat):
     m = re.search(pat, texto, flags=re.IGNORECASE)
     if not m:
         return None
     return m.group(1).strip() if m.lastindex else m.group(0).strip()
 
-# extrai campos de NF em PDF
-
+# Extrai campos da NF em PDF
 def extrair_campos_nf(texto_nf):
     return {
         'nome_cliente': buscar_regex(texto_nf, r'(?<=\n)[A-Z ]{5,}(?=\n)'),
@@ -102,25 +111,24 @@ def extrair_campos_nf(texto_nf):
         'transportadora_endereco': buscar_regex(texto_nf, r'ENDERE[ÇC]O\s*\n(.*?)\n')
     }
 
-# extrai texto inteiro do PDF
-
+# Extrai texto de qualquer PDF
 def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype='pdf') as doc:
         return '\n'.join(p.get_text() for p in doc)
 
-# renderiza primeira página
-
+# Renderiza primeira página para preview
 def renderizar_primeira_pagina(file_bytes):
     with fitz.open(stream=file_bytes, filetype='pdf') as doc:
         return doc[0].get_pixmap(dpi=120).tobytes('png')
 
-# similaridade textual
-
+# Similaridade textual simples
 def similaridade(a, b):
-    return SequenceMatcher(None, re.sub(r'\s+', ' ', (a or '')).lower(), re.sub(r'\s+', ' ', (b or '')).lower()).ratio()
+    return SequenceMatcher(None,
+        re.sub(r'\s+', ' ', (a or '')).lower(),
+        re.sub(r'\s+', ' ', (b or '')).lower()
+    ).ratio()
 
-# extrai dados do XML
-
+# Extrai dados de NF-e XML
 def extrair_dados_xml(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
@@ -130,12 +138,12 @@ def extrair_dados_xml(xml_file):
     transp = root.find('.//nfe:transporta', ns)
     vol = root.find('.//nfe:vol', ns)
 
-    # peso: usa bruto ou liquido se disponível
+    # peso: usa bruto ou liquido
     pb = vol.findtext('nfe:pesoB', '0', namespaces=ns) if vol is not None else '0'
     pl = vol.findtext('nfe:pesoL', '0', namespaces=ns) if vol is not None else '0'
     peso = pb if parse_num(pb) > 0 else pl
 
-    # frete
+    # frete codificado
     fmap = {'0':'Emitente','1':'Destinatário','2':'Terceiros','9':'Sem Frete'}
     mf = root.findtext('.//nfe:modFrete','', namespaces=ns)
     frete = fmap.get(mf, mf)
@@ -212,12 +220,12 @@ if rma_file:
                 ok = similaridade(v_nf, v_r) > 0.85
             rows.append((campo.replace('_',' ').title(), v_nf, v_r, ok))
 
-        # comparação de transportadora contra base fixa
+        # comparação de transportadora com base fixa
         xml_name = nf.get('transportadora_razao','')
         match = None
-        for k,v in transportadoras.items():
-            if v['razao_social'].lower() in xml_name.lower() or xml_name.lower() in v['razao_social'].lower() or similaridade(xml_name, v['razao_social'])>0.8:
-                match = k
+        for key, base in transportadoras.items():
+            if base['razao_social'].lower() in xml_name.lower() or xml_name.lower() in base['razao_social'].lower() or similaridade(xml_name, base['razao_social'])>0.8:
+                match = key
                 break
         if match:
             base = transportadoras[match]
