@@ -99,9 +99,7 @@ def buscar_regex(texto, padrao):
     match = re.search(padrao, texto, flags=re.IGNORECASE)
     if not match:
         return None
-    if match.lastindex:
-        return match.group(1).strip()
-    return match.group(0).strip()
+    return match.group(1).strip() if match.lastindex else match.group(0).strip()
 
 def extrair_valor_total_rma(texto):
     match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, re.IGNORECASE)
@@ -117,41 +115,42 @@ def extrair_dados_xml(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
     ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
-    ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
 
-    dest = root.find('.//nfe:dest', ns)
-    transp_base = root.find('.//nfe:transp', ns)
-    vol = transp_base.find('nfe:vol', ns) if transp_base is not None else None
-    transporta = transp_base.find('nfe:transporta', ns) if transp_base is not None else None
+    # Usar dados do emitente
+    emit = root.find('.//nfe:emit', ns)
+    transp = root.find('.//nfe:transporta', ns)
+    vol = root.find('.//nfe:vol', ns)
 
-    frete_map = {
-        '0': 'Emitente',
-        '1': 'Destinatário',
-        '2': 'Terceiros',
-        '9': 'Sem Frete'
-    }
+    # Peso: prioriza bruto, senão líquido, senão zero
+    peso_b = vol.findtext('nfe:pesoB', default='0', namespaces=ns) if vol is not None else '0'
+    peso_l = vol.findtext('nfe:pesoL', default='0', namespaces=ns) if vol is not None else '0'
+    peso = peso_b if float(peso_b.replace(',', '.')) > 0 else peso_l
+
+    # Mapeamento frete
+    frete_map = {'0': 'Emitente','1': 'Destinatário','2': 'Terceiros','9': 'Sem Frete'}
     mod_frete_codigo = root.findtext('.//nfe:modFrete', default='', namespaces=ns)
-    mod_frete = frete_map.get(mod_frete_codigo, mod_frete_codigo)
+    frete = frete_map.get(mod_frete_codigo, mod_frete_codigo)
 
-    endereco_logradouro = dest.findtext('nfe:enderDest/nfe:xLgr', default='', namespaces=ns)
-    endereco_numero = dest.findtext('nfe:enderDest/nfe:nro', default='', namespaces=ns)
-    endereco_cliente = f"{endereco_logradouro}, {endereco_numero}".strip(', ')
+    # Endereço emitente
+    log = emit.findtext('nfe:enderEmit/nfe:xLgr', default='', namespaces=ns)
+    nro = emit.findtext('nfe:enderEmit/nfe:nro', default='', namespaces=ns)
+    endereco_emit = f"{log}, {nro}".strip(', ')
 
     return {
-        "nome_cliente": dest.findtext('nfe:xNome', default='', namespaces=ns),
-        "cnpj_cliente": dest.findtext('nfe:CNPJ', default='', namespaces=ns),
-        "endereco_cliente": endereco_cliente,
-        "quantidade_caixas": vol.findtext('nfe:qVol', default='', namespaces=ns) if vol is not None else '',
-        "peso": vol.findtext('nfe:pesoL', default='', namespaces=ns) if vol is not None else '',
-        "frete": mod_frete,
-        "cfop": root.findtext('.//nfe:CFOP', default='', namespaces=ns),
-        "valor_total": root.findtext('.//nfe:vNF', default='', namespaces=ns),
-        "transportadora_razao": transporta.findtext('nfe:xNome', default='', namespaces=ns) if transporta is not None else '',
-        "transportadora_cnpj": transporta.findtext('nfe:CNPJ', default='', namespaces=ns) if transporta is not None else '',
-        "transportadora_ie": transporta.findtext('nfe:IE', default='', namespaces=ns) if transporta is not None else '',
-        "transportadora_endereco": transporta.findtext('nfe:xEnder', default='', namespaces=ns) if transporta is not None else '',
-        "transportadora_cidade": transporta.findtext('nfe:xMun', default='', namespaces=ns) if transporta is not None else '',
-        "transportadora_uf": transporta.findtext('nfe:UF', default='', namespaces=ns) if transporta is not None else '',
+        'nome_cliente': emit.findtext('nfe:xNome', default='', namespaces=ns),
+        'cnpj_cliente': emit.findtext('nfe:CNPJ', default='', namespaces=ns),
+        'endereco_cliente': endereco_emit,
+        'quantidade_caixas': vol.findtext('nfe:qVol', default='', namespaces=ns) if vol is not None else '',
+        'peso': peso,
+        'frete': frete,
+        'cfop': root.findtext('.//nfe:CFOP', default='', namespaces=ns),
+        'valor_total': root.findtext('.//nfe:vNF', default='', namespaces=ns),
+        'transportadora_razao': transp.findtext('nfe:xNome', default='', namespaces=ns) if transp is not None else '',
+        'transportadora_cnpj': transp.findtext('nfe:CNPJ', default='', namespaces=ns) if transp is not None else '',
+        'transportadora_ie': transp.findtext('nfe:IE', default='', namespaces=ns) if transp is not None else '',
+        'transportadora_endereco': transp.findtext('nfe:xEnder', default='', namespaces=ns) if transp is not None else '',
+        'transportadora_cidade': transp.findtext('nfe:xMun', default='', namespaces=ns) if transp is not None else '',
+        'transportadora_uf': transp.findtext('nfe:UF', default='', namespaces=ns) if transp is not None else ''
     }
 
 # =========================== INTERFACE ================================
