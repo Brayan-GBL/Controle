@@ -211,17 +211,17 @@ conteudo = {
         - PA | SOLÍSTICA
         - PB | BRASPRESS
         - PE | BRASPRESS
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
+        - PI | BRASPRESS
+        - PR | LOCAL
+        - RJ | RODONAVES
+        - RN | BRASPRESS
+        - RO | SOLÍSTICA
+        - RR | SOLÍSTICA
+        - RS | LOCAL
+        - SC | LOCAL
+        - SE | BRASPRESS
+        - SP | RODONAVES
+        - TO | SOLÍSTICA
         '''
     }
 }
