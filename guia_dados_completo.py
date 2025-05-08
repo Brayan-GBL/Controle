@@ -193,39 +193,6 @@ conteudo = {
         '''
     },
 
-     "Malha de transportadoras": {
-        "ESTADO | TRANSPORTADORA": '''
-        Clientes com **IE ativa** devem emitir NF-e de devolução.  
-        - AC | SOLÍSTICA
-        - AL | BRASPRESS
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-        - 
-    
-},
-
 transportadoras = {
     "Braspress": """
     **Razão Social:** BRASPRESS TRANSPORTES URGENTES LTDA
