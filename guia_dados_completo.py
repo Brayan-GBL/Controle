@@ -20,7 +20,7 @@ conteudo = {
         5. **Comunicação:** Avisar o cliente sobre o status da devolução e previsão de crédito.
         """,
         "Pontos Importantes": """
-        ⚠️ **Cancelamentos fora do prazo ou pedidos expedidos → deve usar devolução simbólica.**
+       1. ⚠️ Cancelamentos fora do prazo ou pedidos expedidos → deve usar devolução simbólica.
         ✅ SAC completo e correto acelera todo o processo.
         📌 Verificar no sistema se a NF original já foi baixada antes de abrir o SAC.
         🔔 Notificar sempre o solicitante sobre a confirmação do retorno de mercadoria.
