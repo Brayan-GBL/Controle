@@ -192,7 +192,7 @@ conteudo = {
         - 624-6 (Venda Entrega Futura): gera coleta e exige dados completos do transportador.
         '''
     },
-    "MALHA TRANSPORTADORA": {
+    "Malha Transportadora": {
         "MALHA TRANSPORTADORA PARA COLETA REVERSA": '''
         LOCALIDADE | TRANSPORTADORA  
         - AC | SOLÍSTICA
