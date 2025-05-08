@@ -21,9 +21,9 @@ conteudo = {
         """,
         "Pontos Importantes": """
        1. ⚠️ Cancelamentos fora do prazo ou pedidos expedidos → deve usar devolução simbólica.
-        ✅ SAC completo e correto acelera todo o processo.
-        📌 Verificar no sistema se a NF original já foi baixada antes de abrir o SAC.
-        🔔 Notificar sempre o solicitante sobre a confirmação do retorno de mercadoria.
+       2. ✅ SAC completo e correto acelera todo o processo.
+       3. 📌 Verificar no sistema se a NF original já foi baixada antes de abrir o SAC.
+       4. 🔔 Notificar sempre o solicitante sobre a confirmação do retorno de mercadoria.
         """
     },
     "2. Emissão de NF e Coleta (Não Contribuinte)": {
