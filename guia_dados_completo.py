@@ -213,7 +213,6 @@ operacoes = {
     Casos de trocas ou devoluções sem necessidade de movimentação financeira
     (fluxo rápido, sem geração de créditos complexos)."""
 }
-},
     "8. Tipos de RMA (Referência Rápida)": {
         "Referência Rápida": '''
 • **RMA DEV BONIF** – NF Remessa bonificação, doação ou brinde.  
