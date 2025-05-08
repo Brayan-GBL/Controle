@@ -161,11 +161,11 @@ conteudo = {
     },
     "Tipos de RMA (Referência Rápida)": {
         "Referência Rápida": '''
-        • **RMA DEV BONIF** – NF Remessa bonificação, doação ou brinde.  
-        • **RMA DEV SIMP FAT ENT FUT** – NF Simples Faturamento p/ entrega futura.  
-        • **RMA DEV VDA ENT FUT** – NF Venda de mercadoria p/ entrega futura.  
-        • **RMA DEV VENDA** – NF Venda de mercadoria e/ou recebida de terceiros.  
-        • **RMA SAIDAS DIVER C/ ICMS** – NF Outras saídas/remessas diversas.
+        • **P15-RMA DEV BONIF** – NF Remessa bonificação, doação ou brinde.  
+        • **P15-RMA DEV SIMP FAT ENT FUT** – NF Simples Faturamento p/ entrega futura.  
+        • **P15-RMA DEV VDA ENT FUT** – NF Venda de mercadoria p/ entrega futura.  
+        • **P15-RMA DEV VENDA** – NF Venda de mercadoria e/ou recebida de terceiros.  
+        • **P15-RMA SAIDAS DIVER C/ ICMS** – NF Outras saídas/remessas diversas.
         '''
     },
 
