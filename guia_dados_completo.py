@@ -1,191 +1,248 @@
 conteudo = {
     "1. Cancelamento / Recusa de Pedidos": {
         "Quando usar?": """
-        📋 **Cancelamento:** Quando o pedido e a NF ainda podem ser cancelados (prazo ≤ 7 dias, não expedido).<br>
-        O setor de **Gestão de Pedidos** é o responsável por essa validação.<br><br>
-        ❌ **Recusa/Desistência:** Quando o cliente recusa no ato da entrega ou desiste após a expedição.<br>
-        O setor de **Transportes** deve ser acionado para retorno da mercadoria.
+        📋 **Cancelamento:** Quando o pedido e a NF ainda podem ser cancelados (prazo ≤ 7 dias, não expedido).
+        O setor de **Gestão de Pedidos** realiza a validação e baixa automática.
+        
+        ❌ **Recusa/Desistência:** Cliente recusa no ato da entrega ou desiste após expedição.
+        Acionar o setor de **Transportes** para retorno imediato da mercadoria.
         """,
         "Procedimentos": """
-        1. Emitir **RMA** no Oracle (sem transportadora e frete \"Sem frete\").<br>
-           - Observação: \"Pedido cancelado\" ou \"Pedido recusado pelo cliente\".<br>
-        2. Abrir **SAC**:<br>
-           - Tipo: Solicitação<br>
-           - Assunto: \"Cancelamento pedido xxx\" ou \"Pedido xxx recusado\"<br>
-           - Informar: Área, Origem, Responsável, Tipo de venda, RMA, NF, Filial.<br>
-        3. Para **LNE/Remessa Antecipada**, não emitir RMA. Abrir SAC normalmente e informar a NF remessa.<br>
-        4. Logística Devolução:<br>
-           - Emite a NF de devolução e notifica pelo CRM.<br>
-           - Crédito será usado para abater a NF cancelada/recusada (financeiro).
+        1. **Emitir RMA** no Oracle:
+           - Transportadora: vazio; Frete: “Sem frete”.
+           - Observação: “Pedido cancelado” ou “Pedido recusado pelo cliente”.
+        2. **Abrir SAC**:
+           - Tipo: Solicitação
+           - Assunto: “Cancelamento pedido XXX” ou “Pedido XXX recusado”
+           - Informar: Área/Processo, Origem, Responsável, Tipo de Venda, RMA, NF e Filial.
+        3. **Exceções LNE/Remessa:** Sem RMA; abra SAC e selecione “Loja na Escola / Remessa antecipada” e informe NF de remessa LNE.
+        4. **Tratativa Logística:** Emite NF de devolução, notifica pelo CRM e o financeiro aplica crédito para abater a NF cancelada/recusada.
+        5. **Comunicação:** Avisar o cliente sobre o status da devolução e previsão de crédito.
         """,
         "Pontos Importantes": """
-        ⚠️ Cancelamentos fora do prazo ou pedidos expedidos → Devolução simbólica.<br>
-        ✅ SAC deve estar com todas informações completas para agilidade no processo.<br>
-        📌 Sempre checar se a NF original já foi baixada no sistema.
+        ⚠️ Cancelamentos fora do prazo ou pedidos expedidos → deve usar devolução simbólica.
+        ✅ SAC completo e correto acelera todo o processo.
+        📌 Verificar no sistema se a NF original já foi baixada antes de abrir o SAC.
+        🔔 Notificar sempre o solicitante sobre a confirmação do retorno de mercadoria.
         """
     },
-
     "2. Emissão de NF e Coleta (Não Contribuinte)": {
         "Quando usar?": """
-        - Cliente sem **Inscrição Estadual (IE)**, sem permissão para emitir NF de devolução.<br>
-        - A empresa (PSD) emite **nota de entrada** para retorno ao estoque.
+        - Cliente sem **Inscrição Estadual (IE)**; não pode emitir NF de entrada.
+        - A PSD emite **nota de entrada** para retorno ao estoque da gráfica.
+        - Uso: devoluções de bonificações, remessas de teste e pedidos cancelados fora de prazo.
         """,
         "Procedimentos": """
-        1. Emitir **RMA** após verificar elegibilidade da devolução.<br>
-        2. Abrir **SAC** com:<br>
-           - Assunto: \"Solicitação NF e coleta (não contribuinte)\"<br>
-           - Informar: RMA, NF, transportadora, filial, etc.<br>
-        3. Logística Devolução:<br>
-           - Emite NF de entrada e gera o crédito.<br>
-           - Encaminha ao Transportes para coleta (acompanhamento via TMS).
+        1. **Conferir regras:** Quantidades, prazos e itens conforme política de devolução.
+        2. **Emitir RMA** no Oracle seguindo o manual “Devoluções Oracle - Como criar RMA”.
+        3. **Abrir SAC**:
+           - Assunto: “Solicitação NF e coleta (não contribuinte)”
+           - Informar: RMA, NF para crédito, nome da transportadora, Filial e demais campos.
+        4. **Tratativa Logística:**
+           - Emite NF de devolução/entrada e integra no Oracle para crédito.
+           - Encaminha NF ao setor de Transportes; coleta agendada e acompanhada via TMS.
+        5. **Confirmação:** Enviar cópia da NF ao cliente e ao solicitante para garantir que transportador tenha o documento.
         """,
         "Pontos Importantes": """
-        📌 NF deve ser enviada ao cliente antes da coleta.<br>
-        📦 Caixas devem estar lacradas, identificadas, com acesso facilitado.<br>
-        ⚠️ Coleta cancelada após 2 tentativas frustradas de contato.
+        📌 Enviar NF e RMA ao cliente ANTES da coleta; transportadora pode solicitar no momento.
+        📦 Caixas lacradas, identificadas e em local acessível.
+        ⏳ Coleta cancelada após 2 tentativas sem retorno ou itens não conformes.
+        🔍 Verificar no TMS se a coleta foi confirmada e informar o solicitante.
         """
     },
-
     "3. Solicitação de Coleta (Contribuinte)": {
         "Quando usar?": """
-        - Cliente com **Inscrição Estadual (IE)**: é o emissor da NF de devolução.<br>
-        - Utiliza-se CFOP e dados da RMA. Frete normalmente **FOB** (por conta da empresa).
+        - Cliente com **IE ativa**; ele emite a NF de devolução.
+        - Frete normalmente **FOB** (frete por conta do destinatário).
+        - Em casos de frete pago pelo cliente, seguir procedimento “Devolução com Frete por Conta do Cliente”.
         """,
         "Procedimentos": """
-        1. Emitir **RMA** no Oracle → Gera Autorização de Devolução.<br>
-        2. Cliente emite **NF de devolução** com base na autorização.<br>
-        3. Abrir **SAC**:<br>
-           - Assunto: \"Solicitação NF e coleta contribuinte\"<br>
-           - Anexar PDF da NF emitida.<br>
-        4. Logística Devolução:<br>
-           - Confere NF, notifica CRM, e envia ao Transportes (TMS).
+        1. **Emitir RMA** no Oracle (gera “Autorização de Devolução de Produto”).
+        2. **Cliente emite NF**:
+           - Validar CFOP, quantidade, valores e dados de transporte.
+           - Enviar PDF da NF ao solicitante.
+        3. **Abrir SAC**:
+           - Assunto: “Solicitação NF e coleta contribuinte”.
+           - Anexar PDF da NF e preencher dados: RMA, transportadora, Filial.
+        4. **Tratativa Logística:**
+           - Conferir NF vs RMA; recusar SAC se houver divergências.
+           - Enviar à Transportes para coleta no TMS após conferência.
+        5. **Pós-coleta:** Confirmar retorno ao CD e gerar nota de entrada simbólica para estoque.
         """,
         "Pontos Importantes": """
-        ⚠️ NF com mais de 15 dias pode ser recusada.<br>
-        📌 Checar se CFOP e dados da nota estão corretos.<br>
-        ✅ Manter dados de contato atualizados para evitar falhas.
+        ⚠️ Notas com emissão > 15 dias podem ser recusadas.
+        📦 Caixas lacradas e identificadas; quantidade igual à NF.
+        📞 Confirmar dados de contato e porta/recepção antes da coleta.
+        🔄 Em caso de recusa de SAC, documentar motivo e instruir cliente para correção rápida.
         """
     },
-
     "4. Emissão de NF e Coleta LNE": {
         "Quando usar?": """
-        - Para materiais em poder de terceiros (LNE / Remessa Antecipada).<br>
-        - Quando há sobras não vendidas e é necessário recolher.
+        - Materiais em poder de terceiros (Loja na Escola / Remessa antecipada).
+        - Itens não vendidos devem ser recolhidos e baixados do sistema.
         """,
         "Procedimentos": """
-        1. Validar os itens com relatórios do SGE / Oracle.<br>
-        2. Preencher o formulário LNE com todas as informações.<br>
-        3. Abrir SAC: \"Emissão de NF e coleta LNE\" e anexar formulário + NF Remessa.<br>
-        4. Logística Devolução:<br>
-           - Emite a NF, baixa saldo de terceiros, avisa CRM e aciona coleta via TMS.
+        1. **Confrontar dados** com relatórios SGE/Oracle para identificar quantidades.
+        2. **Preencher formulário LNE** (disponível no CRM), incluindo dados de NF e coleta.
+        3. **Abrir SAC**:
+           - Assunto: “Emissão de NF e coleta LNE”.
+           - Anexar formulário LNE e informar NF Remessa LNE.
+        4. **Tratativa Logística:**
+           - Emite NF de coleta, baixa estoque de terceiros e notifica CRM.
+           - Coleta gerenciada pelo TMS.
+        5. **Follow-up:** Verificar no TMS se a coleta ocorreu e informar o solicitante.
         """,
         "Pontos Importantes": """
-        📦 Caixas lacradas, identificadas e acessíveis.<br>
-        ⚠️ A coleta será cancelada após 2 tentativas sem sucesso.<br>
-        ✅ Enviar NF ao cliente antes da coleta.
+        📌 Sempre enviar NF e formulário ao cliente; transportadora exige no local.
+        📦 Mesma quantidade e tipo de embalagens descritas na NF.
+        ⏳ Coleta cancelada após 2 tentativas sem sucesso.
+        🔔 Registrar histórico de solicitações em CRM para rastreabilidade.
         """
     },
-
-    "5. Devolução com Frete por Conta do Cliente": {
+    "5. Devolução c/ Frete por Conta do Cliente": {
         "Quando usar?": """
-        - Cliente arca com o frete (conforme contrato ou exceção).<br>
-        - Pode usar transportadora parceira ou própria.
+        - Cliente assume o frete (contrato ou escolha própria).
+        - Pode usar transportadora da base ou outra de escolha do cliente.
         """,
         "Procedimentos": """
-        1. Emitir RMA:<br>
-           - Não contribuinte: frete FOB<br>
-           - Contribuinte: frete CIF<br>
-        2. Abrir SAC:<br>
-           - Assunto: \"Devolução com frete por conta do cliente\"<br>
-           - Informar: RMA, tipo, transportadora, se o cliente irá contratar frete, PDF da NF (contribuinte).
+        **A. Cliente paga via nossa transportadora**
+        1. Emitir RMA: Não contribuinte = **FOB**; Contribuinte = **CIF**.
+        2. Abrir SAC: Assunto “Devolução com frete por conta do cliente”; Informar RMA e NF.
+        - Cliente contrata? “Não”.
+
+        **B. Cliente contrata transportadora externa**
+        1. Verificar se a transportadora externa está cadastrada; se não, informe dados (Nome/CNPJ/IE/Endereço).
+        2. Emitir RMA com campo de transportadora em branco e frete “FOB”.
+        3. Abrir SAC: Cliente contrata? “Sim”; preencher dados da transportadora.
+        4. Logística: Emite ou integra NF, envia coleta ou instruções ao cliente.
         """,
         "Pontos Importantes": """
-        ✅ NF deve ser enviada ao cliente.<br>
-        ⚠️ Cliente com transportadora própria: responsabilidade total pela logística.<br>
-        📦 Caixas conforme NF, lacradas e acessíveis.
+        📌 Confirmar pagamento do frete antes de emitir RMA.
+        ⏳ Acompanhar coleta: nossa base vs transportadora externa.
+        📄 Manter cópia da NF e comprovante de frete no CRM.
+        🔔 Notificar solicitante sobre prazos de coleta e eventuais atrasos.
         """
     },
-
-    "6. Faturamento de Vendas Fora do LNE": {
+    "6. Faturamento Vendas Fora do LNE": {
         "Quando usar?": """
-        - Identificadas vendas fora dos canais oficiais da Loja na Escola.<br>
-        - Ajuste necessário no estoque e faturamento.
+        - Vendas negociadas diretamente na escola (fora do sistema oficial).
+        - Ajuste de estoque via devolução simbólica e faturamento contra a escola.
         """,
         "Procedimentos": """
-        1. Gerar pedido no SGE com operação 067-3 (sem movimentar estoque).<br>
-        2. Abrir SAC com número do pedido e NF remessa LNE.<br>
-        3. Logística emite NF simbólica e fatura o pedido.
+        1. Emitir **devolução simbólica** para ajustar estoque (sem movimentação física).
+        2. Criar pedido no SGE (operação **067-3**) que não mexe no estoque.
+        3. Abrir SAC: Assunto “Faturamento vendas fora do LNE”; incluir nº pedido SGE e NF Remessa LNE.
+        4. Logística: Emite nota de devolução simbólica, baixa estoque em poder de terceiros e fatura pedido.
+        5. Validar no CRM e enviar confirmação ao solicitante.
         """,
         "Pontos Importantes": """
-        📌 Evita divergência de estoque e cobrança indevida.<br>
-        ✅ Sempre verificar registros de vendas com a escola.
+        ⚠️ Usar operação correta (067-3) para não gerar inconsistência de estoque.
+        ⏳ Prazo de processamento: até 3 dias úteis após triagem.
+        📌 Garantir que NF Remessa LNE esteja anexada e conferida.
         """
     },
-
-    "7. Troca de NF por Correção de CNPJ/Desconto": {
+    "7. Troca de NF p/ Correção de CNPJ / Desconto": {
         "Quando usar?": """
-        - Ajustes como:<br>
-            • Correção de valores e descontos<br>
-            • CNPJ incorreto<br>
-            • Migração de venda (ex: LNE → Direta)
+        - Processo **virtual** sem retorno de mercadoria.
+        - Corrigir valores, descontos, CNPJ ou migrar tipo de venda (ex.: LNE → Direta).
         """,
         "Procedimentos": """
-        1. Emitir RMA simbólica (sem transportadora, \"Sem frete\").<br>
-        2. Informar observação: \"Devolução simbólica\".<br>
-        3. Abrir SAC:<br>
-           - Assunto: \"Troca de NF para correção de desconto/CNPJ\"<br>
-           - Informar pedido SGE, NF original, tipo de venda, etc.<br>
-        4. Logística realiza crédito e emite novo faturamento.
+        1. Emitir RMA simbólica sem transportadora (FOB “Sem frete”).
+        2. Adicionar observação “Devolução simbólica – correção de desconto/CNPJ”.
+        3. Abrir SAC: Assunto “Troca de NF p/ correção de desconto/CNPJ”; informar nº pedido SGE e NF p/ crédito.
+        4. Logística: Emite nota de devolução simbólica, abate crédito e gera novo faturamento.
+        5. Para operações antecipadas (623-8/624-6), podem ser **2 RMAs** – remessa futura & faturamento.
         """,
         "Pontos Importantes": """
-        ⚠️ Faturamento virtual exige itens/quantidades idênticos à nota original.<br>
-        ✅ Pedido e RMA devem ser processados no mesmo dia.
+        📌 RMA e novo faturamento devem ser enviados na mesma solicitação.
+        ⚠️ Carta de correção não abrange valores fiscais ou mudança de remetente.
+        🔄 Conferir operação correta (115-8, 067-3 ou 163-1) antes de reaplicar.
         """
+    },
+    "Tipos de RMA (Referência Rápida)": {
+        "Referência Rápida": '''
+        • **RMA DEV BONIF** – NF Remessa bonificação, doação ou brinde.  
+        • **RMA DEV SIMP FAT ENT FUT** – NF Simples Faturamento p/ entrega futura.  
+        • **RMA DEV VDA ENT FUT** – NF Venda de mercadoria p/ entrega futura.  
+        • **RMA DEV VENDA** – NF Venda de mercadoria e/ou recebida de terceiros.  
+        • **RMA SAIDAS DIVER C/ ICMS** – NF Outras saídas/remessas diversas.
+        '''
+    },
+
+    "Dúvidas Frequentes": {
+        "Pergunta 1": "**Q:** SLA para emissão de etiqueta após abertura de chamado? **A:** 5 dias úteis para emissão de NF e etiqueta.",
+        "Pergunta 2": "**Q:** Após geração, retornam ao atendimento ou mandam direto à escola? **A:** Retornamos ao time de atendimento; eles encaminham NF e etiqueta à escola.",
+        "Pergunta 3": "**Q:** Prazo para coleta após envio de etiqueta? **A:** 3-5 dias úteis em capitais/metrópoles; 7-10 dias úteis interior.",
+        "Pergunta 4": "**Q:** Quem confere material no CD e prazo? **A:** Recebido pela Posigraf; time interno faz conferência em até 10 dias úteis.",
+        "Pergunta 5": "**Q:** Ajuste de estoque após triagem? **A:** PSD tem 10 dias úteis para devolução de compra; Posigraf tem 7 dias úteis p/ reintegração; materiais avariados são descartados."
+    },
+
+    "Instruções para Emissão de NF-e | Clientes Contribuintes": {
+        "Instruções Gerais": '''
+        Clientes com **IE ativa** devem emitir NF-e de devolução.  
+        - Seguir dados do RMA: Natureza de Operação, CFOP, quantidade, valor unitário, desconto e total.  
+        - Informar no campo Observação: nº da NF de origem.  
+        - A mercadoria deve acompanhar NF + RMA em caixas apropriadas.
+        ''',
+        "Notas Especiais": '''
+        ✍️ **Carta de correção aceita para:** CFOP, CST, dados do transportador, razão social parcial, dados adicionais (pedido, caixas, endereço no mesmo estado).  
+        🚫 **Não aceita:** valores fiscais, mudança de destinatário/remetente, impostos que alterem cálculo.  
+        📄 **Referências de operações:**  
+        - 623-8 (Simples Faturamento): não gera coleta.  
+        - 624-6 (Venda Entrega Futura): gera coleta e exige dados completos do transportador.
+        '''
     }
 }
 
 transportadoras = {
     "Braspress": """
-    **CNPJ:** 48.740.351/0003-27  
+    **Razão Social:** BRASPRESS TRANSPORTES URGENTES LTDA
+    **CNPJ:** 48.740.351/0003-27
     **IE:** 9030546625
-    **Endereço:** RUA JOAO BETTEGA, 3802 – CIDADE INDUSTRIAL, CURITIBA/PR
+    **Endereço:** RUA JOAO BETTEGA, 3802 – CIDADE INDUSTRIAL
+    **Cidade/UF:** CURITIBA/PR
+    **Contato:** Central de Coletas (41) XXXXX-XXXX
     """,
     "Cruzeiro do Sul": """
-    **CNPJ:** 03.232.675/0061-95  
-    **Oracle:** 03232675006195-PR-PARCEL-Padrao  
-    **Endereço:** AV. DEZ DE DEZEMBRO, 5680 – JARDIM PIZA, LONDRINA/PR
+    **Razão Social:** VIAÇÃO CRUZEIRO DO SUL LTDA
+    **CNPJ (Oracle):** 03232675006195-PR-PARCEL-Padrao
+    **IE:** (sem IE cadastrado)
+    **Endereço:** AV. DEZ DE DEZEMBRO, 5680 – JARDIM PIZA
+    **Cidade/UF:** LONDRINA/PR
+    **Observação:** Necessário usar CNPJ completo no Oracle para localização.
     """,
-    "FL BRASIL (SOLISTICA)": """
-    **CNPJ:** 18.233.211/0028-50  
-    **IE:** 9076066008  
-    **Endereço:** RODOVIA BR 116, 22301 – TATUQUARA, CURITIBA/PR
+    "FL Brasil (Solistica)": """
+    **Razão Social:** FL BRASIL HOLDING, LOGÍSTICA
+    **CNPJ:** 18.233.211/0028-50
+    **IE:** 9076066008
+    **Endereço:** RODOVIA BR-116, KM 22301 – TATUQUARA
+    **Cidade/UF:** CURITIBA/PR
     """,
     "Local Express": """
-    **CNPJ:** 06.199.523/0001-95  
-    **IE:** 9030307558  
-    **Endereço:** R FORMOSA, 131 – PLANTA PORTAL DA SERRA, PINHAIS/PR
+    **Razão Social:** LOCAL EXPRESS TRANSPORTES E LOGÍSTICA
+    **CNPJ:** 06.199.523/0001-95
+    **IE:** 9030307558
+    **Endereço:** RUA FORMOSA, 131 – PLANTA PORTAL DA SERRA
+    **Cidade/UF:** PINHAIS/PR
     """,
     "Rodonaves": """
-    **CNPJ:** 44.914.992/0017-03  
-    **IE:** 6013031914  
-    **Endereço:** RUA RIO GRANDE DO NORTE, 1200, CENTRO, LONDRINA/PR
+    **Razão Social:** RODONAVES TRANSPORTES E ENCOMENDAS LTDA
+    **CNPJ:** 44.914.992/0017-03
+    **IE:** 6013031914
+    **Endereço:** RUA RIO GRANDE DO NORTE, 1200 – CENTRO
+    **Cidade/UF:** LONDRINA/PR
     """
 }
 
 operacoes = {
     "Operação 163-1": """
-⚙️ **Correções sistêmicas** como:  
-- Ajuste de CNPJ  
-- Descontos incorretos  
-- Erros operacionais no SGE
-""",
+    Correções sistêmicas (CNPJ, descontos incorretos, configurações no SGE).
+    Usar para ajustes internos sem movimentação física.
+    """,
     "Operação 067-3": """
-📘 **Exclusiva para**:  
-- Vendas fora da Loja na Escola  
-- Utilizada para regularização fiscal, sem movimentar estoque físico
-""",
+    Correção de vendas realizadas fora da plataforma Loja na Escola
+    (devolução simbólica + faturamento específico).""",
     "Operação 115-8": """
-✅ **Sem movimentação financeira**  
-- Fins administrativos ou ajustes sem impacto fiscal
-"""
+    Casos de trocas ou devoluções sem necessidade de movimentação financeira
+    (fluxo rápido, sem geração de créditos complexos)."""
 }
