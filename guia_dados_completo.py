@@ -191,6 +191,7 @@ conteudo = {
         - 623-8 (Simples Faturamento): não gera coleta.  
         - 624-6 (Venda Entrega Futura): gera coleta e exige dados completos do transportador.
         '''
+    }
 }
 
 transportadoras = {
