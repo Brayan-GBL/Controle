@@ -255,6 +255,7 @@ conteudo = {
         - SP | RODONAVES
         - TO | SOLÍSTICA
         '''
+    }
 }
 
 transportadoras = {
