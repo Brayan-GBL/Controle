@@ -195,9 +195,33 @@ conteudo = {
     "TESTEEEEEEEE": {
         "MALHA TRANSPORTADORA": '''
         LOCALIDADE | TRANSPORTADORA.  
-        - Seguir dados do RMA: Natureza de Operação, CFOP, quantidade, valor unitário, desconto e total.  
-        - Informar no campo Observação: nº da NF de origem.  
-        - A mercadoria deve acompanhar NF + RMA em caixas apropriadas.
+        - 
+        - 
+        - 
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
+        -
         '''
     }
 }
