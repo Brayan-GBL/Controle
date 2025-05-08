@@ -254,40 +254,6 @@ conteudo = {
         - SP | RODONAVES
         - TO | SOLÍSTICA
         '''
-    },
-    "Dúvidas Gerais": {
-    "Geração da NF de coleta/devolução": """
-        A geração da NF é feita pelo time de Devolução.
-        - Em casos de venda direta (venda de mercadoria, bonificação, outras saídas – remessas diversas), ela é emitida através da RMA.
-        - Para remessas à escola, utilizamos uma ordem gerada a partir do pedido de origem.
-        Se a escola tiver e-mail cadastrado, recebe a NF por e-mail; além disso, inserimos a NF no SAC do Zoho, e o Analista encaminha para a escola junto com a etiqueta de devolução.
-        """,
-    "Geração de etiquetas para as caixas": """
-        A geração é feita pelo EBS:
-        - Usamos o número da NF para clientes não-contribuintes e B2C.
-        - Usamos o número da RMA para clientes contribuintes.
-        Colocamos essa informação na solicitação de coleta e orientamos o Analista sobre o que deve ser encaminhado para a escola, garantindo a assertividade no ato da coleta.
-        """,
-    "Solicitação de coleta ao time de transportes": """
-        Após finalizar o SAC, alteramos o status para Log Tracking.
-        O time de Transporte tem acesso aos SACs processados no dia anterior via relatório extraído diretamente do Zoho.
-        A partir daí, eles conferem todas as solicitações e entram em contato com as transportadoras responsáveis para agendar as coletas.
-        """,
-    "Pós-conferência e baixa de saldo no EBS": """
-        - Para coleta LNE e clientes não-contribuintes: o saldo é baixado antes de finalizarmos a solicitação de coleta.
-          • Escrituramos a NF no RI (Recebimento Integrado) no Oracle para baixar o saldo e enviar ao nosso subventário P15-DEV.CLIENT.
-          • Quando o material chega na gráfica, o saldo já está no sistema para efetuar a devolução à Posigraf.
-        - Para clientes contribuintes: como o cliente emite a NF, precisamos aguardar o recebimento dessa NF na gráfica antes de escriturar e lançar o saldo no subventário.
-        O lançamento dos itens fica vinculado à RMA criada pelo Analista na solicitação de coleta.
-        """,
-    "Tratamento de divergências": """
-        - Materiais enviados a mais (sobra) são direcionados para descarte.
-        - Para materiais não enviados, sinalizados como falta ou avariados, ainda estamos construindo o processo de cobrança das escolas (nível Arco).
-        """,
-    "Cobrança e operações especiais": """
-        - Não cobrar da escola (falta/avaria): o Analista deve cadastrar um pedido na operação 115-8 (que não movimenta financeiro, apenas estoque) e abrir um SAC de “Troca de NF” no Zoho para Logística Devolução.
-        - Venda irregular (fora do LNE): antes de gerar a NF de devolução, o Analista envia o formulário LNE com os itens vendidos fora do LNE e abre uma solicitação de “Faturamento de vendas fora do LNE” para cobrar esses itens da escola.
-        """
     }
 }
 
