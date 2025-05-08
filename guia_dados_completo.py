@@ -199,20 +199,9 @@ transportadoras = {
     **Endereço:** RUA RIO GRANDE DO NORTE, 1200 – CENTRO
     **Cidade/UF:** LONDRINA/PR
     """
-}
-
-operacoes = {
-    "Operação 163-1": """
-    Correções sistêmicas (CNPJ, descontos incorretos, configurações no SGE).
-    Usar para ajustes internos sem movimentação física.
-    """,
-    "Operação 067-3": """
-    Correção de vendas realizadas fora da plataforma Loja na Escola
-    (devolução simbólica + faturamento específico).""",
-    "Operação 115-8": """
-    Casos de trocas ou devoluções sem necessidade de movimentação financeira
-    (fluxo rápido, sem geração de créditos complexos)."""
 },
+
+
     "8. Tipos de RMA (Referência Rápida)": {
         "Referência Rápida": '''
 • **RMA DEV BONIF** – NF Remessa bonificação, doação ou brinde.  
@@ -250,4 +239,17 @@ Clientes com **IE ativa** devem emitir NF-e de devolução.
 🔁 **067-3:** Faturamento simbólico de vendas fora do LNE.  
 💼 **115-8:** Devoluções sem movimentação financeira.
 '''
-    }
+    },
+
+operacoes = {
+    "Operação 163-1": """
+    Correções sistêmicas (CNPJ, descontos incorretos, configurações no SGE).
+    Usar para ajustes internos sem movimentação física.
+    """,
+    "Operação 067-3": """
+    Correção de vendas realizadas fora da plataforma Loja na Escola
+    (devolução simbólica + faturamento específico).""",
+    "Operação 115-8": """
+    Casos de trocas ou devoluções sem necessidade de movimentação financeira
+    (fluxo rápido, sem geração de créditos complexos)."""
+}
