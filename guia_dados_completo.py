@@ -170,11 +170,10 @@ conteudo = {
     },
 
     "Dúvidas Frequentes": {
-        "SLA SAC": "**P:** SLA para emissão de Nota e etiqueta após abertura de chamado? \n**R:** 5 dias úteis para emissão de NF e etiqueta.",
-        "Pergunta 2": "**P:** Após geração, retornam ao atendimento ou mandam direto à escola? **R:** Retornamos ao time de atendimento; eles encaminham NF e etiqueta à escola.",
-        "Pergunta 3": "**P:** Prazo para coleta após envio de etiqueta? **R:** 3-5 dias úteis em capitais/metrópoles; 7-10 dias úteis interior.",
-        "Pergunta 4": "**P:** Quem confere material no CD e prazo? **R:** Recebido pela Posigraf; time interno faz conferência em até 10 dias úteis.",
-        "Pergunta 5": "**P:** Ajuste de estoque após triagem? **R:** PSD tem 10 dias úteis para devolução de compra; Posigraf tem 7 dias úteis p/ reintegração; materiais avariados são descartados.",
+        "Sla SAC": "**P:** SLA para emissão de Nota e etiqueta após abertura de chamado? \n**R:** 5 dias úteis para emissão de NF e etiqueta.",
+        "Prazo de coleta": "**P:** Prazo para coleta após envio de etiqueta? **R:** 3-5 dias úteis em capitais/metrópoles; 7-10 dias úteis interior.",
+        "Conferência de material": "**P:** Quem confere material no CD e prazo? **R:** Recebido pela Posigraf; time interno faz conferência em até 10 dias úteis.",
+        "Prazo de internalização": "**P:** Ajuste de estoque após triagem? **R:** PSD tem 10 dias úteis para devolução de compra; Posigraf tem 7 dias úteis p/ reintegração; materiais avariados são descartados.",
 "Geração da NF de coleta/devolução": """
         A geração da NF é feita pelo time de Devolução.
         - Em casos de venda direta (venda de mercadoria, bonificação, outras saídas – remessas diversas), ela é emitida através da RMA.
