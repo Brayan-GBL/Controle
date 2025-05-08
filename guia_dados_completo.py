@@ -305,7 +305,7 @@ operacoes = {
     "Operação 067-3": """
     Correção de vendas realizadas fora da plataforma Loja na Escola
     (devolução simbólica + faturamento específico).
-    Faturamento de materiais não enviados na devolução.""",
+    E faturamento de materiais não enviados na devolução.""",
     "Operação 115-8": """
     Casos de trocas ou devoluções sem necessidade de movimentação financeira
     (fluxo rápido, sem geração de créditos complexos)."""
