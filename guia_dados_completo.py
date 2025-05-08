@@ -224,7 +224,7 @@ conteudo = {
         - TO | SOLÍSTICA
         '''
     },
-    "aaaaaaa": {
+    "Dúvidas Gerais": {
     "Geração da NF de coleta/devolução": """
         A geração da NF é feita pelo time de Devolução.
         - Em casos de venda direta (venda de mercadoria, bonificação, outras saídas – remessas diversas), ela é emitida através da RMA.
