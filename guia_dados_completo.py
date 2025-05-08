@@ -191,6 +191,21 @@ conteudo = {
         - 623-8 (Simples Faturamento): não gera coleta.  
         - 624-6 (Venda Entrega Futura): gera coleta e exige dados completos do transportador.
         '''
+    },
+    "TESTEEEEEEEE": {
+        "Instruções Gerais": '''
+        Clientes com **IE ativa** devem emitir NF-e de devolução.  
+        - Seguir dados do RMA: Natureza de Operação, CFOP, quantidade, valor unitário, desconto e total.  
+        - Informar no campo Observação: nº da NF de origem.  
+        - A mercadoria deve acompanhar NF + RMA em caixas apropriadas.
+        ''',
+        "Notas Especiais": '''
+        ✍️ **Carta de correção aceita para:** CFOP, CST, dados do transportador, razão social parcial, dados adicionais (pedido, caixas, endereço no mesmo estado).  
+        🚫 **Não aceita:** valores fiscais, mudança de destinatário/remetente, impostos que alterem cálculo.  
+        📄 **Referências de operações:**  
+        - 623-8 (Simples Faturamento): não gera coleta.  
+        - 624-6 (Venda Entrega Futura): gera coleta e exige dados completos do transportador.
+        '''
     }
 }
 
