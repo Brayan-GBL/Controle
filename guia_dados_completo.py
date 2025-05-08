@@ -193,8 +193,8 @@ conteudo = {
         '''
     },
     "MALHA TRANSPORTADORA": {
-        "MALHA TRANSPORTADORA": '''
-        LOCALIDADE | TRANSPORTADORA.  
+        "MALHA TRANSPORTADORA PARA COLETA REVERSA": '''
+        LOCALIDADE | TRANSPORTADORA  
         - AC | SOLÍSTICA
         - AL | BRASPRESS
         - AM | SOLÍSTICA
