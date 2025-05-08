@@ -251,4 +251,3 @@ Clientes com **IE ativa** devem emitir NF-e de devolução.
 💼 **115-8:** Devoluções sem movimentação financeira.
 '''
     }
-}
