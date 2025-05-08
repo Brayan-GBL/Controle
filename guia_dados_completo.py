@@ -195,22 +195,22 @@ conteudo = {
     "TESTEEEEEEEE": {
         "MALHA TRANSPORTADORA": '''
         LOCALIDADE | TRANSPORTADORA.  
-        - 
-        - 
-        - 
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
-        -
+        - AC | SOLÍSTICA
+        - AL | BRASPRESS
+        - AM | SOLÍSTICA
+        - AP | SOLÍSTICA
+        - BA | BRASPRESS
+        - CE | BRASPRESS
+        - DF | RODONAVES
+        - ES | RODONAVES
+        - GO | RODONAVES
+        - MA | BRASPRESS
+        - MG | SOLÍSTICA
+        - MS | BRASPRESS
+        - MT | RODONAVES
+        - PA | SOLÍSTICA
+        - PB | BRASPRESS
+        - PE | BRASPRESS
         -
         -
         -
