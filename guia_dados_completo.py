@@ -219,7 +219,7 @@ conteudo = {
         ✍️ **Carta de correção aceita para:** CFOP, CST, dados do transportador, razão social parcial, dados adicionais (pedido, caixas, endereço no mesmo estado).  
         🚫 **Não aceita:** valores fiscais, mudança de destinatário/remetente, impostos que alterem cálculo.  
         📄 **Referências de operações:**  
-        - 623-8 (Simples Faturamento): não gera coleta.  
+        - 623-8 (Simples Faturamento): não gera coleta e não há necessidade de inserir os dados do transportador.  
         - 624-6 (Venda Entrega Futura): gera coleta e exige dados completos do transportador.
         '''
     },
