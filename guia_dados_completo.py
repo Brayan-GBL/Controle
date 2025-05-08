@@ -223,7 +223,38 @@ conteudo = {
         - SP | RODONAVES
         - TO | SOLÍSTICA
         '''
-    }
+    },
+    "aaaaaaa": {
+        "MALHA TRANSPORTADORA PARA COLETA REVERSA": '''
+        LOCALIDADE | TRANSPORTADORA  
+        - AC | SOLÍSTICA
+        - AL | BRASPRESS
+        - AM | SOLÍSTICA
+        - AP | SOLÍSTICA
+        - BA | BRASPRESS
+        - CE | BRASPRESS
+        - DF | RODONAVES
+        - ES | RODONAVES
+        - GO | RODONAVES
+        - MA | BRASPRESS
+        - MG | SOLÍSTICA
+        - MS | BRASPRESS
+        - MT | RODONAVES
+        - PA | SOLÍSTICA
+        - PB | BRASPRESS
+        - PE | BRASPRESS
+        - PI | BRASPRESS
+        - PR | LOCAL
+        - RJ | RODONAVES
+        - RN | BRASPRESS
+        - RO | SOLÍSTICA
+        - RR | SOLÍSTICA
+        - RS | LOCAL
+        - SC | LOCAL
+        - SE | BRASPRESS
+        - SP | RODONAVES
+        - TO | SOLÍSTICA
+        '''
 }
 
 transportadoras = {
