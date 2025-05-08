@@ -191,7 +191,37 @@ conteudo = {
         - 623-8 (Simples Faturamento): não gera coleta.  
         - 624-6 (Venda Entrega Futura): gera coleta e exige dados completos do transportador.
         '''
-    }
+    },
+     "Malha de transportadoras": {
+        "ESTADO | TRANSPORTADORA": '''
+        Clientes com **IE ativa** devem emitir NF-e de devolução.  
+        - AC | SOLÍSTICA
+        - AL | BRASPRESS
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
+        - 
 }
 
 transportadoras = {
