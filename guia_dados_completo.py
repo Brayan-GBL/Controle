@@ -213,3 +213,42 @@ operacoes = {
     Casos de trocas ou devoluções sem necessidade de movimentação financeira
     (fluxo rápido, sem geração de créditos complexos)."""
 }
+},
+    "8. Tipos de RMA (Referência Rápida)": {
+        "Referência Rápida": '''
+• **RMA DEV BONIF** – NF Remessa bonificação, doação ou brinde.  
+• **RMA DEV SIMP FAT ENT FUT** – NF Simples Faturamento p/ entrega futura.  
+• **RMA DEV VDA ENT FUT** – NF Venda de mercadoria p/ entrega futura.  
+• **RMA DEV VENDA** – NF Venda de mercadoria e/ou recebida de terceiros.  
+• **RMA SAIDAS DIVER C/ ICMS** – NF Outras saídas/remessas diversas.
+'''
+    },
+    "10. Dúvidas Frequentes": {
+        "Pergunta 1": "**Q:** SLA para emissão de etiqueta após abertura de chamado? **A:** 5 dias úteis para emissão de NF e etiqueta.",
+        "Pergunta 2": "**Q:** Após geração, retornam ao atendimento ou mandam direto à escola? **A:** Retornamos ao time de atendimento; eles encaminham NF e etiqueta à escola.",
+        "Pergunta 3": "**Q:** Prazo para coleta após envio de etiqueta? **A:** 3-5 dias úteis em capitais/metrópoles; 7-10 dias úteis interior.",
+        "Pergunta 4": "**Q:** Quem confere material no CD e prazo? **A:** Recebido pela Posigraf; time interno faz conferência em até 10 dias úteis.",
+        "Pergunta 5": "**Q:** Ajuste de estoque após triagem? **A:** PSD tem 10 dias úteis para devolução de compra; Posigraf tem 7 dias úteis p/ reintegração; materiais avariados são descartados."
+    },
+    "11. Instruções para Emissão de NF-e | Clientes Contribuintes": {
+        "Instruções Gerais": '''
+Clientes com **IE ativa** devem emitir NF-e de devolução.  
+- Seguir dados do RMA: Natureza de Operação, CFOP, quantidade, valor unitário, desconto e total.  
+- Informar no campo Observação: nº da NF de origem.  
+- A mercadoria deve acompanhar NF + RMA em caixas apropriadas.
+''',
+        "Notas Especiais": '''
+✍️ **Carta de correção aceita para:** CFOP, CST, dados do transportador, razão social parcial, dados adicionais (pedido, caixas, endereço no mesmo estado).  
+🚫 **Não aceita:** valores fiscais, mudança de destinatário/remetente, impostos que alterem cálculo.  
+📄 **Referências de operações:**  
+- 623-8 (Simples Faturamento): não gera coleta.  
+- 624-6 (Venda Entrega Futura): gera coleta e exige dados completos do transportador.
+'''
+    },
+    "12. Operações (115-8, 067-3, 163-1)": {
+        "Detalhamento": '''
+🔢 **163-1:** Correções sistêmicas (CNPJ, descontos, erros SGE).  
+🔁 **067-3:** Faturamento simbólico de vendas fora do LNE.  
+💼 **115-8:** Devoluções sem movimentação financeira.
+'''
+    }
