@@ -307,4 +307,4 @@ components.html(f"""
     modal.style.display = 'none';
   }};
 </script>
-""", height=0, width=0)
+""", height=200, width=200)
