@@ -262,22 +262,24 @@ RAW_IMAGE_URL = "https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXR
 
 components.html(f"""
 <style>
+  /* sobressai acima do “Manage app” e fica mais alto na tela */
   #guide-balloon {{
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 80px;        /* sobressai acima do footer */
+    right: 40px;         /* afasta um pouco da borda */
     width: 60px;
     cursor: pointer;
-    z-index: 9999;
+    z-index: 2147483647; /* sempre no topo */
   }}
   #guide-modal {{
     display: none;
     position: fixed;
-    top:0; left:0; width:100%; height:100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0,0,0,0.6);
     justify-content: center;
     align-items: center;
-    z-index: 9998;
+    z-index: 2147483646;
   }}
   #guide-modal img {{
     max-width: 80%;
