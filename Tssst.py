@@ -336,4 +336,4 @@ components.html(f"""
     modal.classList.remove('show');
   }});
 </script>
-""", height=200, width=200)
+""", height=2000, width=2000)
