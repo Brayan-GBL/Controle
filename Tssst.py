@@ -277,7 +277,7 @@ components.html(f"""
     line-height: 50px;
     text-align: center;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: transform 2.2s ease;
     z-index: 10000;
   }}
   #guide-balloon:hover {{
@@ -308,7 +308,7 @@ components.html(f"""
     max-height: 90%;
     border-radius: 8px;
     transform: scale(0.8);
-    transition: transform 0.3s ease;
+    transition: transform 2.3s ease;
   }}
   #guide-modal.show img {{
     transform: scale(1);
