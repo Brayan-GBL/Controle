@@ -6,6 +6,7 @@ import re
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from difflib import SequenceMatcher
+import streamlit.components.v1 as components  # <— necessário para o HTML/JS do balão
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
@@ -238,7 +239,6 @@ if rma_file:
     st.download_button("📥 Baixar Relatório CSV", data=csv, file_name='comparacao_nf_rma.csv')
 
     with st.expander("🖼️ Visualizar PDFs"):
-        # ————— MOSTRA ATÉ 3 páginas por coluna, empilhadas verticalmente —————
         imgs_nf  = renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3)
         imgs_rma = renderizar_paginas_para_preview(BytesIO(rma_bytes), n_paginas=3)
 
@@ -256,3 +256,53 @@ if rma_file:
 
 else:
     st.info("👆 Envie ao menos a RMA para iniciar a verificação.")
+
+# ====================== BALÃO FLUTUANTE + MODAL ======================
+RAW_IMAGE_URL = "https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg"
+
+components.html(f"""
+<style>
+  #guide-balloon {{
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    cursor: pointer;
+    z-index: 9999;
+  }}
+  #guide-modal {{
+    display: none;
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 9998;
+  }}
+  #guide-modal img {{
+    max-width: 80%;
+    max-height: 80%;
+    border: 4px solid white;
+    border-radius: 8px;
+  }}
+</style>
+
+<!-- Balão -->
+<img id="guide-balloon" src="{RAW_IMAGE_URL}" title="Clique para abrir guia"/>
+
+<!-- Modal -->
+<div id="guide-modal">
+  <img src="{RAW_IMAGE_URL}" />
+</div>
+
+<script>
+  const balloon = document.getElementById('guide-balloon');
+  const modal   = document.getElementById('guide-modal');
+  balloon.onclick = () => {{
+    modal.style.display = 'flex';
+  }};
+  modal.onclick = () => {{
+    modal.style.display = 'none';
+  }};
+</script>
+""", height=0, width=0)
