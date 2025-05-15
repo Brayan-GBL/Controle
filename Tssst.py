@@ -238,19 +238,21 @@ if rma_file:
     st.download_button("📥 Baixar Relatório CSV", data=csv, file_name='comparacao_nf_rma.csv')
 
     with st.expander("🖼️ Visualizar PDFs"):
-        # ————— MOSTRA ATÉ 3 miniaturas lado a lado —————
+        # ————— MOSTRA ATÉ 3 páginas por coluna, empilhadas verticalmente —————
         imgs_nf  = renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3)
         imgs_rma = renderizar_paginas_para_preview(BytesIO(rma_bytes), n_paginas=3)
 
-        st.subheader("📑 Nota Fiscal")
-        cols_nf = st.columns(len(imgs_nf))
-        for col, img in zip(cols_nf, imgs_nf):
-            col.image(img, use_column_width=True)
+        col_nf, col_rma = st.columns(2)
 
-        st.subheader("📑 RMA")
-        cols_rma = st.columns(len(imgs_rma))
-        for col, img in zip(cols_rma, imgs_rma):
-            col.image(img, use_column_width=True)
+        with col_nf:
+            st.subheader("📑 Nota Fiscal")
+            for img in imgs_nf:
+                st.image(img, use_column_width=True)
+
+        with col_rma:
+            st.subheader("📑 RMA")
+            for img in imgs_rma:
+                st.image(img, use_column_width=True)
 
 else:
     st.info("👆 Envie ao menos a RMA para iniciar a verificação.")
