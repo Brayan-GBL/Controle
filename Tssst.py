@@ -258,7 +258,7 @@ if rma_file:
             document.getElementById('guide-modal').remove();
           }};
         </script>
-        """, height=2000)
+        """, height=1200)
 
     with st.expander("🖼️ Visualizar PDFs"):
         imgs_nf  = renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3)
