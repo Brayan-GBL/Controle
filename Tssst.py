@@ -262,37 +262,62 @@ RAW_IMAGE_URL = "https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXR
 
 components.html(f"""
 <style>
-  /* sobressai acima do “Manage app” e fica mais alto na tela */
+  /* ponto “?” fixo no canto */
   #guide-balloon {{
     position: fixed;
-    bottom: 80px;        /* sobressai acima do footer */
-    right: 40px;         /* afasta um pouco da borda */
-    width: 60px;
+    bottom: 20px;
+    right: 20px;
+    background: #FFA500;
+    color: #fff;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 2em;
+    line-height: 50px;
+    text-align: center;
     cursor: pointer;
-    z-index: 2147483647; /* sempre no topo */
+    transition: transform 0.2s ease;
+    z-index: 10000;
   }}
+  #guide-balloon:hover {{
+    transform: scale(1.1);
+  }}
+
+  /* backdrop do modal */
   #guide-modal {{
     display: none;
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.6);
-    justify-content: center;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.8);
     align-items: center;
-    z-index: 2147483646;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 9999;
   }}
+  #guide-modal.show {{
+    display: flex;
+    opacity: 1;
+  }}
+
+  /* imagem dentro do modal */
   #guide-modal img {{
-    max-width: 80%;
-    max-height: 80%;
-    border: 4px solid white;
+    max-width: 90%;
+    max-height: 90%;
     border-radius: 8px;
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+  }}
+  #guide-modal.show img {{
+    transform: scale(1);
   }}
 </style>
 
-<!-- Balão -->
-<img id="guide-balloon" src="{RAW_IMAGE_URL}" title="Clique para abrir guia"/>
+<!-- o “balão” virou um círculo laranja com “?” -->
+<div id="guide-balloon" title="Clique para abrir o guia">?</div>
 
-<!-- Modal -->
+<!-- modal inicialmente escondido -->
 <div id="guide-modal">
   <img src="{RAW_IMAGE_URL}" />
 </div>
@@ -300,11 +325,15 @@ components.html(f"""
 <script>
   const balloon = document.getElementById('guide-balloon');
   const modal   = document.getElementById('guide-modal');
-  balloon.onclick = () => {{
-    modal.style.display = 'flex';
-  }};
-  modal.onclick = () => {{
-    modal.style.display = 'none';
-  }};
+
+  balloon.addEventListener('click', () => {{
+    modal.classList.add('show');
+  }});
+
+  // ao clicar em qualquer lugar do backdrop, fecha
+  modal.addEventListener('click', () => {{
+    modal.classList.remove('show');
+  }});
 </script>
-""", height=0, width=0)
+""", height=200, width=200)
+
