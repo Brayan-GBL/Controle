@@ -288,11 +288,11 @@ components.html(f"""
 </style>
 
 <!-- Balão -->
-<img id="guide-balloon" src="{RAW_IMAGE_URL}" title="Clique para abrir guia"/>
+<img id="guide-balloon" src="{https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg}" title="Clique para abrir guia"/>
 
 <!-- Modal -->
 <div id="guide-modal">
-  <img src="{RAW_IMAGE_URL}" />
+  <img src="{https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg}" />
 </div>
 
 <script>
