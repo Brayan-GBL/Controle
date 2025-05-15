@@ -54,7 +54,6 @@ transportadoras = {
 }
 
 # ====================== FUNÇÕES AUXILIARES =======================
-# Extrai texto com PyPDF2
 def extrair_texto_com_pypdf2(file_bytes):
     reader = PyPDF2.PdfReader(BytesIO(file_bytes))
     texto = ""
@@ -62,7 +61,6 @@ def extrair_texto_com_pypdf2(file_bytes):
         texto += page.extract_text() + "\n"
     return texto
 
-# Normaliza strings numéricas para float
 def parse_num(s):
     if not s:
         return 0.0
@@ -76,7 +74,6 @@ def parse_num(s):
     except:
         return 0.0
 
-# Extrai valor total da RMA
 def extrair_valor_total_rma(texto):
     match = re.search(r"Tot\.\s*Liquido\(R\$.*?\):\s*([\d.,]+)", texto, flags=re.IGNORECASE)
     if match:
@@ -87,14 +84,12 @@ def extrair_valor_total_rma(texto):
     match_final = re.search(r"TOTAL\s*[:\s]+([\d.,]+)", texto, flags=re.IGNORECASE)
     return match_final.group(1) if match_final else None
 
-# Regex genérica
 def buscar_regex(texto, pat):
     m = re.search(pat, texto, flags=re.IGNORECASE)
     if not m:
         return None
     return m.group(1).strip() if m.lastindex else m.group(0).strip()
 
-# Extrai campos da NF em PDF
 def extrair_campos_nf(texto_nf):
     return {
         'nome_cliente': buscar_regex(texto_nf, r'(?<=\n)[A-Z ]{5,}(?=\n)'),
@@ -111,48 +106,42 @@ def extrair_campos_nf(texto_nf):
         'transportadora_endereco': buscar_regex(texto_nf, r'ENDERE[ÇC]O\s*\n(.*?)\n')
     }
 
-# Extrai texto de qualquer PDF
 def extrair_texto_pdf(file_bytes):
     with fitz.open(stream=file_bytes, filetype='pdf') as doc:
         return '\n'.join(p.get_text() for p in doc)
 
-# Renderiza primeira página para preview
-def renderizar_primeira_pagina(file_bytes):
+# ————— ALTERAÇÃO: renderizar até 3 páginas —————
+def renderizar_paginas_para_preview(file_bytes, n_paginas: int = 3, dpi: int = 120):
+    imagens = []
     with fitz.open(stream=file_bytes, filetype='pdf') as doc:
-        return doc[0].get_pixmap(dpi=120).tobytes('png')
+        total = min(n_paginas, len(doc))
+        for pg in range(total):
+            pix = doc[pg].get_pixmap(dpi=dpi)
+            imagens.append(pix.tobytes('png'))
+    return imagens
 
-# Similaridade textual simples
 def similaridade(a, b):
     return SequenceMatcher(None,
         re.sub(r'\s+', ' ', (a or '')).lower(),
         re.sub(r'\s+', ' ', (b or '')).lower()
     ).ratio()
 
-# Extrai dados de NF-e XML
 def extrair_dados_xml(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
     ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
-
     emit = root.find('.//nfe:emit', ns)
     transp = root.find('.//nfe:transporta', ns)
     vol = root.find('.//nfe:vol', ns)
-
-    # peso: usa bruto ou liquido
     pb = vol.findtext('nfe:pesoB', '0', namespaces=ns) if vol is not None else '0'
     pl = vol.findtext('nfe:pesoL', '0', namespaces=ns) if vol is not None else '0'
     peso = pb if parse_num(pb) > 0 else pl
-
-    # frete codificado
     fmap = {'0':'Emitente','1':'Destinatário','2':'Terceiros','9':'Sem Frete'}
     mf = root.findtext('.//nfe:modFrete','', namespaces=ns)
     frete = fmap.get(mf, mf)
-
-    # endereço emitente
     log = emit.findtext('nfe:enderEmit/nfe:xLgr','',namespaces=ns)
     nro = emit.findtext('nfe:enderEmit/nfe:nro','',namespaces=ns)
     end_emit = f"{log}, {nro}".strip(', ')
-
     return {
         'nome_cliente': emit.findtext('nfe:xNome','',namespaces=ns),
         'cnpj_cliente': emit.findtext('nfe:CNPJ','',namespaces=ns),
@@ -170,7 +159,7 @@ def extrair_dados_xml(xml_file):
 
 # =========================== INTERFACE ================================
 st.title("✅ Verificador de Nota Fiscal x RMA")
-col1,col2,col3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 with col1:
     nf_file = st.file_uploader("📄 Enviar Nota Fiscal (PDF)", type=["pdf"])
 with col2:
@@ -220,7 +209,6 @@ if rma_file:
                 ok = similaridade(v_nf, v_r) > 0.85
             rows.append((campo.replace('_',' ').title(), v_nf, v_r, ok))
 
-        # comparação de transportadora com base fixa
         xml_name = nf.get('transportadora_razao','')
         match = None
         for key, base in transportadoras.items():
@@ -250,13 +238,19 @@ if rma_file:
     st.download_button("📥 Baixar Relatório CSV", data=csv, file_name='comparacao_nf_rma.csv')
 
     with st.expander("🖼️ Visualizar PDFs"):
-        c1,c2 = st.columns(2)
-        with c1:
-            st.subheader("📑 Nota Fiscal")
-            if nf_file: st.image(renderizar_primeira_pagina(BytesIO(nf_bytes)), use_column_width=True)
-            else: st.info("NF não enviada.")
-        with c2:
-            st.subheader("📑 RMA")
-            st.image(renderizar_primeira_pagina(BytesIO(rma_bytes)), use_column_width=True)
+        # ————— MOSTRA ATÉ 3 miniaturas lado a lado —————
+        imgs_nf  = renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3)
+        imgs_rma = renderizar_paginas_para_preview(BytesIO(rma_bytes), n_paginas=3)
+
+        st.subheader("📑 Nota Fiscal")
+        cols_nf = st.columns(len(imgs_nf))
+        for col, img in zip(cols_nf, imgs_nf):
+            col.image(img, use_column_width=True)
+
+        st.subheader("📑 RMA")
+        cols_rma = st.columns(len(imgs_rma))
+        for col, img in zip(cols_rma, imgs_rma):
+            col.image(img, use_column_width=True)
+
 else:
     st.info("👆 Envie ao menos a RMA para iniciar a verificação.")
