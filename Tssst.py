@@ -236,6 +236,7 @@ if rma_file:
     st.dataframe(df, use_container_width=True)
 
     csv = df.to_csv(index=False).encode('utf-8')
+    # ————— AQUI permanece o botão de CSV, mas você pode substituir por “❔ Guia Aqui” se quiser —
     st.download_button("📥 Baixar Relatório CSV", data=csv, file_name='comparacao_nf_rma.csv')
 
     with st.expander("🖼️ Visualizar PDFs"):
@@ -336,4 +337,3 @@ components.html(f"""
   }});
 </script>
 """, height=200, width=200)
-
