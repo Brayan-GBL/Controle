@@ -62,10 +62,17 @@ def extrair_texto_com_pypdf2(file_bytes):
     return texto
 
 def parse_num(s):
-    if not s: return 0.0
-    txt = s.strip().replace('.', '').replace(',', '.')
-    try: return float(txt)
-    except: return 0.0
+    if not s:
+        return 0.0
+    txt = s.strip()
+    if '.' in txt and ',' in txt:
+        txt = txt.replace('.', '').replace(',', '.')
+    elif ',' in txt:
+        txt = txt.replace(',', '.')
+    try:
+        return float(txt)
+    except:
+        return 0.0
 
 def extrair_valor_total_rma(texto):
     for pat in [
@@ -74,12 +81,14 @@ def extrair_valor_total_rma(texto):
         r"TOTAL\s*[:\s]+([\d.,]+)"
     ]:
         m = re.search(pat, texto, flags=re.IGNORECASE)
-        if m: return m.group(1)
+        if m:
+            return m.group(1)
     return None
 
 def buscar_regex(texto, pat):
     m = re.search(pat, texto, flags=re.IGNORECASE)
-    if not m: return None
+    if not m:
+        return None
     return m.group(1).strip() if m.lastindex else m.group(0).strip()
 
 def extrair_campos_nf(texto_nf):
@@ -105,13 +114,15 @@ def extrair_texto_pdf(file_bytes):
 def renderizar_paginas_para_preview(file_bytes, n_paginas: int = 3, dpi: int = 120):
     imagens = []
     with fitz.open(stream=file_bytes, filetype='pdf') as doc:
-        for pg in range(min(n_paginas, len(doc))):
+        total = min(n_paginas, len(doc))
+        for pg in range(total):
             pix = doc[pg].get_pixmap(dpi=dpi)
             imagens.append(pix.tobytes('png'))
     return imagens
 
 def similaridade(a, b):
-    return SequenceMatcher(None,
+    return SequenceMatcher(
+        None,
         re.sub(r'\s+', ' ', (a or '')).lower(),
         re.sub(r'\s+', ' ', (b or '')).lower()
     ).ratio()
@@ -123,28 +134,35 @@ def extrair_dados_xml(xml_file):
     emit  = root.find('.//nfe:emit', ns)
     transp = root.find('.//nfe:transporta', ns)
     vol   = root.find('.//nfe:vol', ns)
-    pb = vol.findtext('nfe:pesoB','0',namespaces=ns) if vol else '0'
-    pl = vol.findtext('nfe:pesoL','0',namespaces=ns) if vol else '0'
-    peso = pb if parse_num(pb)>0 else pl
+
+    # peso
+    pb = vol.findtext('nfe:pesoB', '0', namespaces=ns) if vol is not None else '0'
+    pl = vol.findtext('nfe:pesoL', '0', namespaces=ns) if vol is not None else '0'
+    peso = pb if parse_num(pb) > 0 else pl
+
+    # frete
     fmap = {'0':'Emitente','1':'Destinatário','2':'Terceiros','9':'Sem Frete'}
-    mf = root.findtext('.//nfe:modFrete','',namespaces=ns)
-    frete = fmap.get(mf,mf)
+    mf = root.findtext('.//nfe:modFrete', '', namespaces=ns)
+    frete = fmap.get(mf, mf)
+
+    # endereço emitente
     log = emit.findtext('nfe:enderEmit/nfe:xLgr','',namespaces=ns)
     nro = emit.findtext('nfe:enderEmit/nfe:nro','',namespaces=ns)
     end_emit = f"{log}, {nro}".strip(', ')
+
     return {
         'nome_cliente': emit.findtext('nfe:xNome','',namespaces=ns),
         'cnpj_cliente': emit.findtext('nfe:CNPJ','',namespaces=ns),
         'endereco_cliente': end_emit,
-        'quantidade_caixas': vol.findtext('nfe:qVol','',namespaces=ns) if vol else '',
+        'quantidade_caixas': vol.findtext('nfe:qVol','',namespaces=ns) if vol is not None else '',
         'peso': peso,
         'frete': frete,
         'cfop': root.findtext('.//nfe:CFOP','',namespaces=ns),
         'valor_total': root.findtext('.//nfe:vNF','',namespaces=ns),
-        'transportadora_razao': transp.findtext('nfe:xNome','',namespaces=ns) if transp else '',
-        'transportadora_cnpj': transp.findtext('nfe:CNPJ','',namespaces=ns) if transp else '',
-        'transportadora_ie': transp.findtext('nfe:IE','',namespaces=ns) if transp else '',
-        'transportadora_endereco': transp.findtext('nfe:xEnder','',namespaces=ns) if transp else ''
+        'transportadora_razao': transp.findtext('nfe:xNome','',namespaces=ns) if transp is not None else '',
+        'transportadora_cnpj': transp.findtext('nfe:CNPJ','',namespaces=ns) if transp is not None else '',
+        'transportadora_ie': transp.findtext('nfe:IE','',namespaces=ns) if transp is not None else '',
+        'transportadora_endereco': transp.findtext('nfe:xEnder','',namespaces=ns) if transp is not None else ''
     }
 
 # =========================== INTERFACE ================================
@@ -164,7 +182,8 @@ if rma_file:
     if xml_file:
         dados_nf = extrair_dados_xml(xml_file)
         origem   = 'XML'
-        if nf_file: nf_bytes = nf_file.read()
+        if nf_file:
+            nf_bytes = nf_file.read()
     elif nf_file:
         nf_bytes = nf_file.read()
         texto_nf = extrair_texto_com_pypdf2(nf_bytes)
@@ -187,12 +206,14 @@ if rma_file:
             'valor_total': extrair_valor_total_rma(rma_texto),
             'transportadora_razao': ext(r'Transportadora:\s*(.*?)(\s|$)')
         }
+
         rows = []
         for campo, v_nf in nf.items():
-            if campo not in rma: continue
+            if campo not in rma:
+                continue
             v_r = rma[campo]
             if campo in ('valor_total','peso'):
-                tol = 0.99 if campo=='valor_total' else 0.01
+                tol = 0.99 if campo == 'valor_total' else 0.01
                 ok = abs(parse_num(v_nf) - parse_num(v_r)) <= tol
             else:
                 ok = similaridade(v_nf, v_r) > 0.85
@@ -203,18 +224,19 @@ if rma_file:
         for key, base in transportadoras.items():
             if (base['razao_social'].lower() in xml_name.lower()
                 or xml_name.lower() in base['razao_social'].lower()
-                or similaridade(xml_name, base['razao_social'])>0.8):
+                or similaridade(xml_name, base['razao_social']) > 0.8):
                 match = key
                 break
+
         if match:
             base = transportadoras[match]
             rows.extend([
                 ('Transportadora Razao', xml_name, base['razao_social'],
                  base['razao_social'].lower() in xml_name.lower()),
                 ('Transportadora CNPJ', nf.get('transportadora_cnpj',''),
-                 base['cnpj'], base['cnpj']==nf.get('transportadora_cnpj','')),
+                 base['cnpj'], base['cnpj'] == nf.get('transportadora_cnpj','')),
                 ('Transportadora IE', nf.get('transportadora_ie',''),
-                 base['ie'], base['ie']==nf.get('transportadora_ie','')),
+                 base['ie'], base['ie'] == nf.get('transportadora_ie','')),
                 ('Transportadora Endereco', nf.get('transportadora_endereco',''),
                  base['endereco'], base['endereco'].lower() in nf.get('transportadora_endereco','').lower())
             ])
@@ -232,24 +254,24 @@ if rma_file:
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Baixar Relatório CSV", data=csv, file_name='comparacao_nf_rma.csv')
 
-    # ====================== VISUALIZAR PDFs + GUIA ======================
-    with st.expander("🖼️ Visualizar PDFs & Guia"):
-        guide_url = "https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg"
-        col_nf, col_rma, col_guide = st.columns(3)
+    # ====================== GUIA DE CONSULTA ======================
+    guide_url = "https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg"
+    st.markdown("---")
+    st.subheader("❔ Guia de Consulta")
+    st.image(guide_url, use_column_width=True)
 
-        with col_nf:
-            st.subheader("📑 Nota Fiscal")
-            for img in renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3):
-                st.image(img, use_column_width=True)
-
-        with col_rma:
-            st.subheader("📑 RMA")
-            for img in renderizar_paginas_para_preview(BytesIO(rma_bytes), n_paginas=3):
-                st.image(img, use_column_width=True)
-
-        with col_guide:
-            st.subheader("❔ Guia")
-            st.image(guide_url, use_column_width=True)
+    # ==================== VISUALIZAR PDFs ====================
+    st.markdown("---")
+    st.subheader("🖼️ Visualizar PDFs")
+    col_nf, col_rma = st.columns(2)
+    with col_nf:
+        st.markdown("**Nota Fiscal**")
+        for img in renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3):
+            st.image(img, use_column_width=True)
+    with col_rma:
+        st.markdown("**RMA**")
+        for img in renderizar_paginas_para_preview(BytesIO(rma_bytes), n_paginas=3):
+            st.image(img, use_column_width=True)
 
 else:
     st.info("👆 Envie ao menos a RMA para iniciar a verificação.")
