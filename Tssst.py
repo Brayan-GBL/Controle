@@ -124,15 +124,12 @@ def extrair_dados_xml(xml_file):
     emit  = root.find('.//nfe:emit', ns)
     transp = root.find('.//nfe:transporta', ns)
     vol   = root.find('.//nfe:vol', ns)
-    # peso
     pb = vol.findtext('nfe:pesoB','0',namespaces=ns) if vol else '0'
     pl = vol.findtext('nfe:pesoL','0',namespaces=ns) if vol else '0'
     peso = pb if parse_num(pb)>0 else pl
-    # frete
     fmap = {'0':'Emitente','1':'Destinatário','2':'Terceiros','9':'Sem Frete'}
     mf = root.findtext('.//nfe:modFrete','',namespaces=ns)
     frete = fmap.get(mf,mf)
-    # endereço emitente
     log = emit.findtext('nfe:enderEmit/nfe:xLgr','',namespaces=ns)
     nro = emit.findtext('nfe:enderEmit/nfe:nro','',namespaces=ns)
     end_emit = f"{log}, {nro}".strip(', ')
@@ -241,24 +238,36 @@ if rma_file:
 
     # >>>> NOVO BOTÃO GUIA AQUI <<<<
     if st.button("❔ Guia Aqui"):
-        # abre o seu “modal” de imagem em tela cheia
         components.html(f"""
-        <div id="guide-modal" style="
-            position:fixed;top:0;left:0;
-            width:100%;height:100%;
-            background:rgba(0,0,0,0.8);
-            display:flex;align-items:center;justify-content:center;
-            z-index:9999;
-        ">
-          <img src="https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg"
-               style="max-width:90%;max-height:90%;border-radius:8px;"/>
+        <style>
+          #guide-modal {{
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+          }}
+          #guide-modal img {{
+            max-width: 90vw;
+            max-height: 90vh;
+            border: none;
+            border-radius: 0;
+          }}
+        </style>
+        <div id="guide-modal">
+          <img src="https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg" />
         </div>
         <script>
-          document.getElementById('guide-modal').onclick = () => {{
-            document.getElementById('guide-modal').remove();
-          }};
+          const modal = document.getElementById('guide-modal');
+          modal.addEventListener('click', function(e) {{
+            if (e.target === modal) {{
+              modal.style.display = 'none';
+            }}
+          }});
         </script>
-        """, height=1200)
+        """, height=0, width=0)
 
     with st.expander("🖼️ Visualizar PDFs"):
         imgs_nf  = renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3)
