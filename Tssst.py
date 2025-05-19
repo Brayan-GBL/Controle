@@ -6,7 +6,6 @@ import re
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from difflib import SequenceMatcher
-import streamlit.components.v1 as components  # para o HTML/JS do modal
 
 st.set_page_config(page_title="Verificador NF x RMA", layout="wide")
 
@@ -188,7 +187,6 @@ if rma_file:
             'valor_total': extrair_valor_total_rma(rma_texto),
             'transportadora_razao': ext(r'Transportadora:\s*(.*?)(\s|$)')
         }
-
         rows = []
         for campo, v_nf in nf.items():
             if campo not in rma: continue
@@ -208,7 +206,6 @@ if rma_file:
                 or similaridade(xml_name, base['razao_social'])>0.8):
                 match = key
                 break
-
         if match:
             base = transportadoras[match]
             rows.extend([
@@ -233,55 +230,26 @@ if rma_file:
     st.dataframe(df, use_container_width=True)
 
     csv = df.to_csv(index=False).encode('utf-8')
-    # mantém o download button
     st.download_button("📥 Baixar Relatório CSV", data=csv, file_name='comparacao_nf_rma.csv')
 
-    # >>>> NOVO BOTÃO GUIA AQUI <<<<
-    if st.button("❔ Guia Aqui"):
-        components.html(f"""
-        <style>
-          #guide-modal {{
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-          }}
-          #guide-modal img {{
-            max-width: 90vw;
-            max-height: 90vh;
-            border: none;
-            border-radius: 0;
-          }}
-        </style>
-        <div id="guide-modal">
-          <img src="https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg" />
-        </div>
-        <script>
-          const modal = document.getElementById('guide-modal');
-          modal.addEventListener('click', function(e) {{
-            if (e.target === modal) {{
-              modal.style.display = 'none';
-            }}
-          }});
-        </script>
-        """, height=0, width=0)
+    # ====================== VISUALIZAR PDFs + GUIA ======================
+    with st.expander("🖼️ Visualizar PDFs & Guia"):
+        guide_url = "https://raw.githubusercontent.com/Brayan-GBL/Controle/main/NFXRMA.jpg"
+        col_nf, col_rma, col_guide = st.columns(3)
 
-    with st.expander("🖼️ Visualizar PDFs"):
-        imgs_nf  = renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3)
-        imgs_rma = renderizar_paginas_para_preview(BytesIO(rma_bytes), n_paginas=3)
-
-        col_nf, col_rma = st.columns(2)
         with col_nf:
             st.subheader("📑 Nota Fiscal")
-            for img in imgs_nf:
+            for img in renderizar_paginas_para_preview(BytesIO(nf_bytes), n_paginas=3):
                 st.image(img, use_column_width=True)
+
         with col_rma:
             st.subheader("📑 RMA")
-            for img in imgs_rma:
+            for img in renderizar_paginas_para_preview(BytesIO(rma_bytes), n_paginas=3):
                 st.image(img, use_column_width=True)
+
+        with col_guide:
+            st.subheader("❔ Guia")
+            st.image(guide_url, use_column_width=True)
 
 else:
     st.info("👆 Envie ao menos a RMA para iniciar a verificação.")
