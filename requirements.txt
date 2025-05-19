@@ -12,3 +12,4 @@ PyPDF2
 lxml
 requests
 Pillow
+openpyxl
