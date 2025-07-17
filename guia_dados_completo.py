@@ -294,7 +294,13 @@ transportadoras = {
     **IE:** 6013031914
     **Endereço:** RUA RIO GRANDE DO NORTE, 1200 – CENTRO
     **Cidade/UF:** LONDRINA/PR
-    """
+    """,
+    "Eagle": """
+    **Razão Social:** EAGLE CARGO TRANSPORTES E LOGISTICA LTDA
+    **CNPJ:** 28.966.357/0001-48
+    **IE:** 
+    **Endereço:** PEDRO TREVISAN, 476
+    **Cidade/UF:** SAO JOSE DOS PI/PR
 }
 
 operacoes = {
