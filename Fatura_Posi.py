@@ -1,118 +1,106 @@
 import pandas as pd
 import streamlit as st
-import unicodedata
-
-def _norm(s: str) -> str:
-    """normaliza nomes de colunas: maiúsculas, sem acento e sem espaços extras"""
-    if not isinstance(s, str):
-        return s
-    s = unicodedata.normalize("NFKD", s)
-    s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    return s.strip().upper()
-
-def _find_col(df: pd.DataFrame, candidates):
-    """encontra a primeira coluna do DF que bate (normalizada) com a lista de candidatos"""
-    norm_map = { _norm(c): c for c in df.columns }
-    for cand in candidates:
-        if _norm(cand) in norm_map:
-            return norm_map[_norm(cand)]
-    return None
+from io import BytesIO
 
 def processar_analise(cobranca_file, triagem_file):
     # Carregar todas as abas do arquivo
     cobranca_xl = pd.ExcelFile(cobranca_file)
     triagem_xl = pd.ExcelFile(triagem_file)
 
-    # Listar abas
+    # Listar todas as abas disponíveis
     cobranca_sheets = [s.strip() for s in cobranca_xl.sheet_names]
-    triagem_sheets  = [s.strip() for s in triagem_xl.sheet_names]
+    triagem_sheets = [s.strip() for s in triagem_xl.sheet_names]
 
-    # Encontrar abas por nome aproximado
+    # Tentar encontrar a aba correta ignorando espaços e maiúsculas
     cobranca_sheet = next((s for s in cobranca_sheets if "devol" in s.lower() or "cobr" in s.lower()), None)
-    triagem_sheet  = next((s for s in triagem_sheets  if "triagem" in s.lower()), None)
+    triagem_sheet = next((s for s in triagem_sheets if "triagem" in s.lower()), None)
     if not cobranca_sheet or not triagem_sheet:
         raise ValueError(f"Abas não encontradas. Disponíveis: {cobranca_sheets} e {triagem_sheets}")
 
-    # Ler abas
+    # Carregar os dados das abas corretas
     cobranca_df = cobranca_xl.parse(cobranca_sheet)
-    triagem_df  = triagem_xl.parse(triagem_sheet)
+    triagem_df = triagem_xl.parse(triagem_sheet)
 
-    # Normalizar nomes de colunas
-    cobranca_df.columns = [c.strip() for c in cobranca_df.columns]
-    triagem_df.columns  = [c.strip() for c in triagem_df.columns]
+    # Limpar nomes das colunas e remover espaços extras
+    cobranca_df.columns = cobranca_df.columns.str.strip()
+    triagem_df.columns = triagem_df.columns.str.strip().str.upper()
 
-    # Identificar colunas necessárias (tolerante a nomes)
-    col_nf_cob   = _find_col(cobranca_df, ["NF", "NOTA FISCAL", "NFE", "NF_PSD"])
-    col_local_cb = _find_col(cobranca_df, ["LOCAL", "PALLET", "PALETE", "PALETTE"])
-    col_qtd_und  = _find_col(cobranca_df, ["QTD UND", "QTD_UND", "QTD", "QUANTIDADE"])
+    # Verificações de colunas obrigatórias
+    obrig_cobranca = ["NF", "LOCAL", "QTD UND"]
+    obrig_triagem_min = ["NOTA FISCAL", "QTDE FÍSICA (BOM)", "QTDE FÍSICA (RUIM)"]
+    for col in obrig_cobranca:
+        if col not in cobranca_df.columns:
+            raise KeyError(f"Coluna obrigatória '{col}' não encontrada na planilha de COBRANÇA.")
+    for col in obrig_triagem_min:
+        if col not in triagem_df.columns:
+            raise KeyError(f"Coluna obrigatória '{col}' não encontrada na planilha de TRIAGEM.")
 
-    col_nf_tri   = _find_col(triagem_df, ["NOTA FISCAL", "NF", "NFE"])
-    col_bom      = _find_col(triagem_df, ["QTDE FÍSICA (BOM)", "QTDE FISICA (BOM)", "QTD FISICA BOM", "QTD BOM", "BOM"])
-    col_ruim     = _find_col(triagem_df, ["QTDE FÍSICA (RUIM)", "QTDE FISICA (RUIM)", "QTD FISICA RUIM", "QTD RUIM", "RUIM"])
-    col_local_tr = _find_col(triagem_df, ["LOCAL", "PALLET", "PALETE", "PALETTE"])
+    # Filtrar apenas linhas com NF e LOCAL preenchidos na cobrança
+    cobranca_df = cobranca_df.dropna(subset=["NF", "LOCAL"])
 
-    obrig_cob = [("NF", col_nf_cob), ("LOCAL", col_local_cb), ("QTD UND", col_qtd_und)]
-    obrig_tri = [("NOTA FISCAL", col_nf_tri), ("QTDE FÍSICA (BOM)", col_bom), ("QTDE FÍSICA (RUIM)", col_ruim)]
-    faltando = [nome for nome, col in obrig_cob + obrig_tri if col is None]
-    if faltando:
-        raise KeyError(f"Colunas obrigatórias ausentes: {', '.join(faltando)}")
+    # Tipagens e normalizações básicas
+    cobranca_df["NF"] = cobranca_df["NF"].astype(str).str.strip()
+    cobranca_df["LOCAL"] = cobranca_df["LOCAL"].astype(str).str.strip()
+    cobranca_df["QTD UND"] = pd.to_numeric(cobranca_df["QTD UND"], errors="coerce").fillna(0)
 
-    # Filtro de linhas válidas
-    cobranca_df = cobranca_df.dropna(subset=[col_nf_cob, col_local_cb])
+    triagem_df["NOTA FISCAL"] = triagem_df["NOTA FISCAL"].astype(str).str.strip()
+    triagem_df["QTDE FÍSICA (BOM)"] = pd.to_numeric(triagem_df["QTDE FÍSICA (BOM)"], errors="coerce").fillna(0)
+    triagem_df["QTDE FÍSICA (RUIM)"] = pd.to_numeric(triagem_df["QTDE FÍSICA (RUIM)"], errors="coerce").fillna(0)
 
-    # Tipos
-    cobranca_df[col_nf_cob]   = cobranca_df[col_nf_cob].astype(str).str.strip()
-    cobranca_df[col_local_cb] = cobranca_df[col_local_cb].astype(str).str.strip()
-    cobranca_df[col_qtd_und]  = pd.to_numeric(cobranca_df[col_qtd_und], errors="coerce").fillna(0)
+    # Criar chave de concatenação na base Cobrança (mantido da sua lógica original)
+    cobranca_df["CONCAT_POSIGRAF"] = cobranca_df["NF"].astype(str) + cobranca_df["QTD UND"].astype(str)
 
-    triagem_df[col_nf_tri] = triagem_df[col_nf_tri].astype(str).str.strip()
-    triagem_df[col_bom]    = pd.to_numeric(triagem_df[col_bom], errors="coerce").fillna(0)
-    triagem_df[col_ruim]   = pd.to_numeric(triagem_df[col_ruim], errors="coerce").fillna(0)
+    # --- AJUSTE PRINCIPAL: consolidar por NF + LOCAL quando houver LOCAL na triagem ---
+    if "LOCAL" in triagem_df.columns:
+        triagem_df["LOCAL"] = triagem_df["LOCAL"].astype(str).str.strip()
 
-    # Se a triagem NÃO tiver coluna de LOCAL/PALLET, caímos no agrupamento só por NF (com aviso)
-    if col_local_tr is None:
-        # Agrupa por NF (sem LOCAL) – comportamento antigo
         triagem_consolidado = (
-            triagem_df.groupby(col_nf_tri, as_index=False)
-            .agg({col_bom: "sum", col_ruim: "sum"})
+            triagem_df
+            .groupby(["NOTA FISCAL", "LOCAL"], as_index=False)
+            .agg({
+                "QTDE FÍSICA (BOM)": "sum",
+                "QTDE FÍSICA (RUIM)": "sum"
+            })
         )
-        triagem_consolidado["CONCAT_DEV"] = triagem_consolidado[col_bom] + triagem_consolidado[col_ruim]
+        triagem_consolidado["CONCAT_DEV"] = triagem_consolidado["QTDE FÍSICA (BOM)"] + triagem_consolidado["QTDE FÍSICA (RUIM)"]
 
-        # Merge apenas por NF (pode misturar pallets iguais de clientes diferentes!)
+        # Merge por NF + LOCAL (chave dupla) -> evita somar pallets diferentes com a mesma NF
         resultado_df = cobranca_df.merge(
             triagem_consolidado,
-            left_on=col_nf_cob,
-            right_on=col_nf_tri,
+            left_on=["NF", "LOCAL"],
+            right_on=["NOTA FISCAL", "LOCAL"],
             how="left"
         )
-        resultado_df["_AVISO_LOCAL"] = "Triagem sem coluna de LOCAL/PALLET — somou por NF."
     else:
-        # Normaliza LOCAL da triagem também
-        triagem_df[col_local_tr] = triagem_df[col_local_tr].astype(str).str.strip()
-
-        # Agrupa por NOTA FISCAL **e** LOCAL (pallet) — CORREÇÃO PEDIDA
+        # Fallback: consolidar somente por NF (comportamento antigo)
         triagem_consolidado = (
-            triagem_df.groupby([col_nf_tri, col_local_tr], as_index=False)
-            .agg({col_bom: "sum", col_ruim: "sum"})
+            triagem_df
+            .groupby("NOTA FISCAL", as_index=False)
+            .agg({
+                "QTDE FÍSICA (BOM)": "sum",
+                "QTDE FÍSICA (RUIM)": "sum"
+            })
         )
-        triagem_consolidado["CONCAT_DEV"] = triagem_consolidado[col_bom] + triagem_consolidado[col_ruim]
+        triagem_consolidado["CONCAT_DEV"] = triagem_consolidado["QTDE FÍSICA (BOM)"] + triagem_consolidado["QTDE FÍSICA (RUIM)"]
 
-        # Merge por NF + LOCAL (PONTO-CHAVE)
         resultado_df = cobranca_df.merge(
             triagem_consolidado,
-            left_on=[col_nf_cob, col_local_cb],
-            right_on=[col_nf_tri, col_local_tr],
+            left_on="NF",
+            right_on="NOTA FISCAL",
             how="left"
         )
+        resultado_df["_AVISO_LOCAL"] = "Triagem sem coluna LOCAL — somou por NF (pode misturar pallets)."
 
-    # Diferença e classificação
-    resultado_df["DIFERENÇA"] = (resultado_df["CONCAT_DEV"].fillna(0) - resultado_df[col_qtd_und].fillna(0))
+    # Calcular diferença entre quantidades
+    resultado_df["CONCAT_DEV"] = pd.to_numeric(resultado_df["CONCAT_DEV"], errors="coerce").fillna(0)
+    resultado_df["DIFERENÇA"] = resultado_df["CONCAT_DEV"] - resultado_df["QTD UND"]
 
+    # Criar análise de status (sua lógica, preservada)
     def classificar_diferenca(row):
-        bom = row.get(col_bom, 0) or 0
-        ruim = row.get(col_ruim, 0) or 0
+        bom = row.get("QTDE FÍSICA (BOM)", 0) or 0
+        ruim = row.get("QTDE FÍSICA (RUIM)", 0) or 0
         concat_dev = row.get("CONCAT_DEV", 0) or 0
-        qtd_und = row.get(col_qtd_und, 0) or 0
+        qtd_und = row.get("QTD UND", 0) or 0
 
         if concat_dev > qtd_und and concat_dev == bom + ruim:
             return "Informação incorreta - Devemos pagar mais"
@@ -127,56 +115,44 @@ def processar_analise(cobranca_file, triagem_file):
 
     resultado_df["Observação PSD"] = resultado_df.apply(classificar_diferenca, axis=1)
 
-    # Valores financeiros
-    valor_unitario = 2,8863
-    resultado_df["Valor Unitário"]   = valor_unitario
-    resultado_df["Total Nota"]       = resultado_df[col_qtd_und].fillna(0) * valor_unitario
-    resultado_df["Total Cobrança"]   = resultado_df["DIFERENÇA"].fillna(0) * valor_unitario
+    # Calcular valores financeiros
+    valor_unitario = 2.76
+    resultado_df["Valor Unitário"] = valor_unitario
+    resultado_df["Total Nota"] = resultado_df["QTD UND"] * valor_unitario
+    resultado_df["Total Cobrança"] = resultado_df["DIFERENÇA"] * valor_unitario
 
-    # Seleção/renomeação amigável
-    col_cliente = _find_col(cobranca_df, ["CLIENTE", "NOME CLIENTE", "CLIENTE_NOME"])
+    # Retorno final no mesmo layout que você já usava
     cols_saida = [
-        col_nf_cob, (col_cliente or "CLIENTE"), col_qtd_und, col_local_cb,
-        "CONCAT_DEV", "DIFERENÇA", "Observação PSD", "Valor Unitário", "Total Nota", "Total Cobrança"
+        "NF", "CLIENTE", "QTD UND", "LOCAL",
+        "CONCAT_DEV", "DIFERENÇA", "Observação PSD",
+        "Valor Unitário", "Total Nota", "Total Cobrança"
     ]
-    # Garante que todas existem
-    cols_saida = [c for c in cols_saida if c in resultado_df.columns]
-
-    # Renomeia para os rótulos pedidos
-    rename_map = {
-        col_nf_cob: "NF",
-        col_qtd_und: "QTD UND",
-        col_local_cb: "LOCAL",
-    }
-    if col_cliente:
-        rename_map[col_cliente] = "CLIENTE"
-
-    saida = resultado_df[cols_saida].rename(columns=rename_map)
-
-    return saida
-
+    cols_existentes = [c for c in cols_saida if c in resultado_df.columns]
+    return resultado_df[cols_existentes]
 
 # -------------------- STREAMLIT --------------------
 st.title("FATURA POSIGRAF")
 
 cobranca_file = st.file_uploader("Upload do arquivo COBRANÇA POSIGRAF", type=["xlsx"])
-triagem_file  = st.file_uploader("Upload do arquivo CONFERÊNCIA TRIAGEM", type=["xlsx"])
+triagem_file = st.file_uploader("Upload do arquivo CONFERÊNCIA TRIAGEM", type=["xlsx"])
 
 if cobranca_file and triagem_file:
     try:
         df_resultado = processar_analise(cobranca_file, triagem_file)
         st.write("### Resultados da Análise:")
-        st.dataframe(df_resultado)
+        st.dataframe(df_resultado, use_container_width=True)
 
-        # Baixar relatório consolidado
+        # Baixar relatório consolidado (com BytesIO)
         nome_saida = "analise_cobranca_triagem.xlsx"
-        df_resultado.to_excel(nome_saida, index=False)
-        with open(nome_saida, "rb") as file:
-            st.download_button(
-                label="Baixar Relatório Consolidado",
-                data=file,
-                file_name=nome_saida,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+        buffer = BytesIO()
+        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+            df_resultado.to_excel(writer, index=False, sheet_name="Resultado")
+        st.download_button(
+            label="Baixar Relatório Consolidado",
+            data=buffer.getvalue(),
+            file_name=nome_saida,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
     except (ValueError, KeyError) as e:
         st.error(f"Erro: {str(e)}. Verifique se os arquivos contêm as abas e colunas corretas.")
