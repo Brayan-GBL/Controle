@@ -96,7 +96,7 @@ def processar_analise(cobranca_file, triagem_file):
     resultado_df["Observação PSD"] = resultado_df.apply(classificar_diferenca, axis=1)
 
     # Calcular valores financeiros
-    valor_unitario = 2.76
+    valor_unitario = 2.8863
     resultado_df["Valor Unitário"] = valor_unitario
     resultado_df["Total Nota"] = resultado_df["QTD UND"] * valor_unitario
     resultado_df["Total Cobrança"] = resultado_df["DIFERENÇA"] * valor_unitario
